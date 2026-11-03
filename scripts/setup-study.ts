@@ -18,8 +18,8 @@ import { createUser, generatePassword } from "../src/server/auth";
 import { importBundle, type StudyBundle } from "../src/server/importer";
 
 const BUNDLES = {
-  real_pocqi: "data/prepared/study-bundle.json",
-  medsp1000: "data/prepared/medsp1000-bundle.json",
+  real_pocqi: "data/study/prepared/real-pocqi-bundle.json",
+  medsp1000: "data/study/prepared/medsp1000-bundle.json",
 } as const;
 
 const handle = openFromEnv();
@@ -27,7 +27,7 @@ await handle.migrate();
 const db = handle.db;
 
 for (const study of STUDY_IDS) {
-  if (!existsSync(BUNDLES[study])) throw new Error(`${BUNDLES[study]} not found; run npm run data:fetch && npm run data:prepare`);
+  if (!existsSync(BUNDLES[study])) throw new Error(`${BUNDLES[study]} not found; run npm run data:prepare`);
   const bundle = JSON.parse(readFileSync(BUNDLES[study], "utf8")) as StudyBundle;
   const r = await importBundle(db, bundle);
   console.log(`${study}: ${r.inserted} cases imported, ${r.unchanged} already present`);

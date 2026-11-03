@@ -4,11 +4,11 @@
 //   data/source/real-pocqi-questions.jsonl
 //   data/source/real-pocqi-answers.jsonl
 //   data/source/real-pocqi-llm-judgments.jsonl
-//   data/source/manifest.json
+//   data/source/real-pocqi-manifest.json
 //
 // Outputs
-//   data/prepared/study-bundle.json  (gitignored build artifact)
-//   data/sample-manifest.json        (committed inventory)
+//   data/study/prepared/real-pocqi-bundle.json  (gitignored build artifact)
+//   data/study/real-pocqi-sample-manifest.json  (committed sample inventory)
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -19,8 +19,9 @@ import {
   type BundleJudgmentRow,
   type BundleResponse,
 } from "../src/lib/prep/bundle";
+import { stratifiedSample, type SourceQuestion } from "../src/lib/prep/realPocqi";
 
-const SOURCE_MANIFEST = path.resolve("data/source/manifest.json");
+const SOURCE_MANIFEST = path.resolve("data/source/real-pocqi-manifest.json");
 
 interface SourceFile {
   path: string;
@@ -32,6 +33,7 @@ interface SourceManifest {
   bundle_version: string;
   study: "real_pocqi";
   study_seed: string;
+  population_size: number;
   sample_size: number;
   sampling: string;
   source_repository: string;
@@ -43,9 +45,8 @@ interface SourceManifest {
   judgment_selection: string;
 }
 
-type SourceQuestion = Omit<BundleItem, "responses" | "llm_judgments">;
-type SourceAnswer = BundleResponse & { item_id: string };
-type SourceJudgment = BundleJudgmentRow & { item_id: string };
+type SourceAnswer = BundleResponse & { question_id: string };
+type SourceJudgment = BundleJudgmentRow & { question_id: string };
 
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -119,40 +120,60 @@ function main() {
   const answers = readJsonl<SourceAnswer>(meta.source_files.answers);
   const judgments = readJsonl<SourceJudgment>(meta.source_files.judgments);
 
-  check(questions.length === meta.sample_size, `expected ${meta.sample_size} questions, found ${questions.length}`);
-  check(new Set(questions.map((question) => question.item_id)).size === questions.length, "duplicate item IDs");
-  check(new Set(questions.map((question) => question.source_question_id)).size === questions.length, "duplicate question IDs");
+  check(questions.length === meta.population_size, `expected ${meta.population_size} questions, found ${questions.length}`);
+  check(new Set(questions.map((question) => question.question_id)).size === questions.length, "duplicate question IDs");
 
-  const answersByItem = new Map<string, BundleResponse[]>();
-  for (const { item_id, ...answer } of answers) {
-    const rows = answersByItem.get(item_id) ?? [];
+  const answersByQuestion = new Map<string, BundleResponse[]>();
+  for (const { question_id, ...answer } of answers) {
+    const rows = answersByQuestion.get(question_id) ?? [];
     rows.push(answer);
-    answersByItem.set(item_id, rows);
+    answersByQuestion.set(question_id, rows);
   }
-  const judgmentsByItem = new Map<string, BundleJudgmentRow[]>();
-  for (const { item_id, ...judgment } of judgments) {
-    const rows = judgmentsByItem.get(item_id) ?? [];
+  const judgmentsByQuestion = new Map<string, BundleJudgmentRow[]>();
+  for (const { question_id, ...judgment } of judgments) {
+    const rows = judgmentsByQuestion.get(question_id) ?? [];
     rows.push(judgment);
-    judgmentsByItem.set(item_id, rows);
+    judgmentsByQuestion.set(question_id, rows);
   }
 
-  const knownItems = new Set(questions.map((question) => question.item_id));
-  for (const itemId of [...answersByItem.keys(), ...judgmentsByItem.keys()]) {
-    check(knownItems.has(itemId), `source row refers to unknown item ${itemId}`);
+  const knownQuestions = new Set(questions.map((question) => question.question_id));
+  for (const questionId of [...answersByQuestion.keys(), ...judgmentsByQuestion.keys()]) {
+    check(knownQuestions.has(questionId), `source row refers to unknown question ${questionId}`);
   }
 
-  const items: BundleItem[] = questions
-    .map((question) => ({
-      ...question,
-      responses: answersByItem.get(question.item_id) ?? [],
-      llm_judgments: judgmentsByItem.get(question.item_id) ?? [],
-    }))
-    .sort((a, b) => a.sample_index - b.sample_index);
-  check(items.every((item, index) => item.sample_index === index), "sample indexes must be contiguous from zero");
-  items.forEach(validateItem);
+  // Validate the complete 620-question population before drawing the study sample.
+  const population = new Map<string, BundleItem>();
+  for (const question of questions) {
+    const item: BundleItem = {
+      item_id: `pocqi_${question.question_id}`,
+      study: "real_pocqi",
+      source_question_id: question.question_id,
+      source_dataset: question.source_dataset,
+      item_type: "single_turn",
+      specialty: question.specialty,
+      question_text: question.question_text,
+      turn_count: null,
+      sample_index: -1,
+      provenance: {
+        source_revision: question.source_revision,
+        source_file: question.source_file,
+        source_row_index: question.source_row_index,
+        question_text_sha256: sha256Hex(question.question_text),
+      },
+      responses: answersByQuestion.get(question.question_id) ?? [],
+      llm_judgments: judgmentsByQuestion.get(question.question_id) ?? [],
+    };
+    validateItem(item);
+    population.set(question.question_id, item);
+  }
 
-  mkdirSync("data/prepared", { recursive: true });
-  writeFileSync("data/prepared/study-bundle.json", JSON.stringify({ meta, items }, null, 1) + "\n");
+  const items = stratifiedSample(questions, meta.sample_size, meta.study_seed).map((question, sampleIndex) => ({
+    ...population.get(question.question_id)!,
+    sample_index: sampleIndex,
+  }));
+
+  mkdirSync("data/study/prepared", { recursive: true });
+  writeFileSync("data/study/prepared/real-pocqi-bundle.json", JSON.stringify({ meta, items }, null, 1) + "\n");
 
   const allocation: Record<string, number> = {};
   for (const item of items) {
@@ -169,8 +190,10 @@ function main() {
       question_text_sha256: item.provenance.question_text_sha256,
     })),
   };
-  writeFileSync("data/sample-manifest.json", JSON.stringify(sampleManifest, null, 2) + "\n");
-  console.log(`Validated and prepared ${items.length} questions, ${answers.length} answers, and ${judgments.length} judgment rows`);
+  writeFileSync("data/study/real-pocqi-sample-manifest.json", JSON.stringify(sampleManifest, null, 2) + "\n");
+  console.log(
+    `Validated ${questions.length} questions, ${answers.length} answers, and ${judgments.length} judgment rows; prepared ${items.length} sampled questions`,
+  );
 }
 
 main();

@@ -2,11 +2,11 @@
 
 ## 1. Source data audit
 
-**Original source:** `DaneshjouLab/Medical-LLM-Self-Preference`. The Real-POCQi cohort is
-frozen in this repository under `data/source/`, so its preparation requires no clone,
-network access or Git LFS. MedSP1000 is fetched at commit
-`2e0462248e33ab391b7afa457f1e06a2d4408e97` ("Restore eight-model MedSP1000 results",
-2026-10-21).
+**Original source:** `DaneshjouLab/Medical-LLM-Self-Preference`. The complete experiment
+inputs used here are normalized and committed under `data/source/`, so normal preparation
+requires no clone, network access or Git LFS. Real-POCQi comes from commit `a40d3617`; the
+eight-model MedSP1000 data comes from `2e046224` ("Restore eight-model MedSP1000 results",
+2026-10-21). Exact commits and file hashes are recorded in the source manifests.
 
 The app was first built against `a40d3617`, which only had 6-model MedSP1000 data. The
 Real-POCQi files are byte-identical in both commits, and re-preparing on the new commit
@@ -16,13 +16,13 @@ produced exactly the same Real-POCQi questions and answers.
 
 | Need | Committed file | Finding |
 |---|---|---|
-| Questions | `data/source/real-pocqi-questions.jsonl` | 100 frozen questions across 30 specialties, including original IDs, sample order and provenance. |
-| Answers | `data/source/real-pocqi-answers.jsonl` | 800 exact model answers (8 per question), with stable IDs, text hashes and generator provenance. |
-| LLM judgments | `data/source/real-pocqi-llm-judgments.jsonl` | 6,400 rows (8 judges × 8 answers × 100 questions), preserving ranks, rubric scores and presentation labels. |
-| Integrity and provenance | `data/source/manifest.json` | Original repository/commit, frozen sampling method, row counts and SHA-256 for every file. |
+| Questions | `data/source/real-pocqi-questions.jsonl` | All 620 questions across 30 specialties, including original IDs and provenance. |
+| Answers | `data/source/real-pocqi-answers.jsonl` | 4,960 exact judged model answers (8 per question), with stable IDs, text hashes and generator provenance. |
+| LLM judgments | `data/source/real-pocqi-llm-judgments.jsonl` | 39,680 rows (8 judges × 8 answers × 620 questions), preserving ranks, rubric scores and presentation labels. |
+| Integrity and provenance | `data/source/real-pocqi-manifest.json` | Original repository/commit, sampling method, row counts and SHA-256 for every file. |
 
 **Validation.** `scripts/prepare-data.ts` verifies every committed file against its manifest
-hash and validates all 100 study questions. For every question it checks:
+hash and validates all 620 source questions before sampling. For every question it checks:
 - exactly 8 judges;
 - all judges saw the same 8 `generation_id`s;
 - 8 distinct generators;
@@ -31,20 +31,20 @@ hash and validates all 100 study questions. For every question it checks:
 - every ranking is a permutation;
 - all five scores are present.
 
-**All 100 frozen questions pass.** The earlier audit against all 620 upstream questions
-established the sample and exact judged generation IDs before these files were frozen.
+**All 620 questions pass.** The exact judged generation IDs, rather than the latest
+generation attempt, are stored for every question.
 
 **Which answer version is used.** Answers are taken by the `generation_id` the judges
 actually saw, never by "latest attempt". This handles the 86 duplicate Qwen generations.
 
 ### MedSP1000
 
-| Need | File in source repo | Finding |
+| Need | Committed file | Finding |
 |---|---|---|
-| Scenarios | `data/question_sets/medsp1000_generation_cases.jsonl` | 200 scenarios. `question_text` is the clinician-visible case packet; `private_patient_context` is the patient-only script. |
-| Conversations | `data/outputs/medsp1000/generations.jsonl` | 1,600 successful 8-turn conversations (200 × 8 clinician models), each with an ordered `turns` array and the `transcript_text` the judges saw. The patient simulator is Mistral-Small-3.1-24B. |
-| LLM judgments (8 turns) | `data/outputs/medsp1000/judgements/rubric_and_model_ranking.jsonl` (Git LFS) | Experiment `medsp1000_all_eight_judges_v2`: 1,600 successful judgments (200 × 8 judges), each ranking all 8 conversations. The same file also holds the older 6-model experiment (`medsp1000_all_judges_v1`), which is not used. |
-| Rubric and prompts | `src/judging/judge_medsp1000.py`, `src/judging/run_medsp1000_judging.py` | Judges saw `CLINICIAN INITIALIZATION` (= `question_text`) and each full `transcript_text`, with the multi-turn rubric wording and "evaluate only the clinician's behavior". They never saw `private_patient_context`. |
+| Scenarios | `data/source/medsp1000-scenarios.jsonl` | All 200 scenarios. `question_text` is clinician-visible; `private_patient_context` is retained only as source provenance for validation. |
+| Conversations | `data/source/medsp1000-conversations.jsonl` | 1,600 exact judged 8-turn conversations (200 × 8 clinician models). |
+| LLM judgments | `data/source/medsp1000-llm-judgments.jsonl` | 12,800 flattened rows (8 judges × 8 conversations × 200 scenarios), from `medsp1000_all_eight_judges_v2`. |
+| Integrity and provenance | `data/source/medsp1000-manifest.json` | Original repository/commit, sampling method, row counts and SHA-256 for every file. |
 
 **Validation.** `prepare-medsp1000` validates all 200 scenarios. For every scenario it
 checks:
@@ -63,7 +63,7 @@ the paper's +0.57, +0.53, +0.62 and +0.61.
 
 ### Not available or not used
 - The README links to `docs/` and the manuscript PDF; neither exists at this commit.
-- These judgment files are fetched (with `--all`) but not imported:
+- These upstream judgment conditions are not included in the committed study source:
   - the other Real-POCQi conditions: direct ranking, identity-revealed and score-only;
   - the MedSP1000 judgments at 2, 4 and 6 visible turns.
 
@@ -75,7 +75,7 @@ The committed cohort was drawn from the 620-question set with seed `pe-real-pocq
 
 1. **Allocation:** proportional allocation across the 30 specialties by the largest-remainder
    method, with at least 1 question per specialty. The resulting allocation is recorded in
-   `data/sample-manifest.json`.
+   `data/study/real-pocqi-sample-manifest.json`.
 2. **Selection within a specialty:** questions are ordered by `sha256("<seed>:stratum:<specialty>:<question_id>")`
    and the first *k* are taken.
 3. **Overall order:** the 100 are ordered by `sha256("<seed>:order:<question_id>")`.
@@ -198,7 +198,7 @@ either study or both; with both, they choose a study after signing in.
 
 **Sampling.** All 200 validated scenarios are ordered by
 `sha256("pe-medsp1000-v1:order:<question_id>")`, and the first 100 form the sample
-(`data/medsp1000-sample-manifest.json`). The first 5 are the prototype. Specialty
+(`data/study/medsp1000-sample-manifest.json`). The first 5 are the prototype. Specialty
 stratification does not apply, since scenarios have no specialty label.
 
 **Presentation order** uses the same Williams-square counterbalancing as Real-POCQi (§3),

@@ -2,31 +2,32 @@
   "bundle_version": "1",
   "study": "real_pocqi",
   "study_seed": "pe-real-pocqi-v1",
+  "population_size": 620,
   "sample_size": 100,
-  "sampling": "Frozen 100-question sample, stratified by specialty with proportional allocation (largest remainder, minimum 1); hashSort within stratum and overall order",
+  "sampling": "Stratified by specialty with proportional allocation (largest remainder, minimum 1); hashSort within stratum and overall order",
   "source_repository": "DaneshjouLab/Medical-LLM-Self-Preference",
   "source_commit": "a40d3617a2e55cb6fe4255198a4b05ba774c3f4c",
   "source_dataset": "jjfenglab/Real-POCQi",
   "source_files": {
     "questions": {
       "path": "data/source/real-pocqi-questions.jsonl",
-      "sha256": "1f39f6304f7887fcb58126686115cf2461706887ba8395eaebb249e84b01c7aa",
-      "rows": 100
+      "sha256": "61e2e5e5c0d4fd6c5e62227739ed7cfc303aeda4137fb9651ef8a1d82cb44b60",
+      "rows": 620
     },
     "answers": {
       "path": "data/source/real-pocqi-answers.jsonl",
-      "sha256": "7b1a0d43e0159d0f606068ff7096d9b822887af7ac35074680faa0acf6103f68",
-      "rows": 800
+      "sha256": "79c9592a20578d88f8a3f3464f6a45c20289a9fe6c679f0081bf460dc17fc37a",
+      "rows": 4960
     },
     "judgments": {
       "path": "data/source/real-pocqi-llm-judgments.jsonl",
-      "sha256": "ce81a1efedcbc8a0df35c583c8cf469990a1d392bb2724dd05dd1a4890c27e04",
-      "rows": 6400
+      "sha256": "e49fc861f93506dfc95f6dc6e5f856518a07296b4a3f67ed076c35c538adfddd",
+      "rows": 39680
     }
   },
   "judging_experiment_id": "real_pocqi_combined_all_judges_v1",
   "judging_condition": "rubric_and_model_ranking",
-  "judgment_selection": "Successful production judgment selected upstream; frozen rows preserve the exact generation IDs, ranks, and scores used for this cohort",
+  "judgment_selection": "status=succeeded, experiment_id=production, last row per (question_id, judge_model) in file order; answers are the exact generation IDs those judgments reference",
   "allocation_by_specialty": {
     "Allergy & Immunology": 3,
     "Anesthesiology": 2,

@@ -89,7 +89,7 @@ One row per reviewer × question.
 | Column | Meaning |
 |---|---|
 | `specialty` | Real-POCQi specialty. |
-| `sample_index` | 0-based position in the frozen sample (`data/sample-manifest.json`). |
+| `sample_index` | 0-based position in the frozen sample (`data/study/real-pocqi-sample-manifest.json`). |
 | `plan_id`, `physician_slot`, `block`, `is_calibration` | As in `rankings`. |
 | `transferred_at` | When the assignment was handed over (see `transferred` in `rankings`). |
 | `queue_position` | 1-based position in this reviewer's queue. |

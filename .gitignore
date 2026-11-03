@@ -7,7 +7,7 @@ next-env.d.ts
 # Local database, optional historical source checkout and generated prepared bundle
 .data/
 .source/
-data/prepared/
+data/study/prepared/
 
 # Secrets
 .env

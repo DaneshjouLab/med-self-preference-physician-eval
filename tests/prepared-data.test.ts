@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { sha256Hex } from "@/lib/hash";
@@ -13,6 +14,44 @@ const fakeQuestions: SourceQuestion[] = Array.from({ length: 90 }, (_, i) => ({
   source_file: "x",
   source_row_index: i,
 }));
+
+describe("committed Real-POCQi source", () => {
+  const manifest = JSON.parse(readFileSync("data/source/real-pocqi-manifest.json", "utf8")) as {
+    population_size: number;
+    source_files: Record<string, { path: string; sha256: string; rows: number }>;
+  };
+
+  it("contains the complete 620-question population and its linked experiment data", () => {
+    expect(manifest.population_size).toBe(620);
+    expect(manifest.source_files.questions.rows).toBe(620);
+    expect(manifest.source_files.answers.rows).toBe(4_960);
+    expect(manifest.source_files.judgments.rows).toBe(39_680);
+    for (const file of Object.values(manifest.source_files)) {
+      const bytes = readFileSync(file.path);
+      expect(bytes.toString("utf8").trimEnd().split("\n")).toHaveLength(file.rows);
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(file.sha256);
+    }
+  });
+});
+
+describe("committed MedSP1000 source", () => {
+  const manifest = JSON.parse(readFileSync("data/source/medsp1000-manifest.json", "utf8")) as {
+    population_size: number;
+    source_files: Record<string, { path: string; sha256: string; rows: number }>;
+  };
+
+  it("contains the complete 200-scenario population and its linked experiment data", () => {
+    expect(manifest.population_size).toBe(200);
+    expect(manifest.source_files.scenarios.rows).toBe(200);
+    expect(manifest.source_files.conversations.rows).toBe(1_600);
+    expect(manifest.source_files.judgments.rows).toBe(12_800);
+    for (const file of Object.values(manifest.source_files)) {
+      const bytes = readFileSync(file.path);
+      expect(bytes.toString("utf8").trimEnd().split("\n")).toHaveLength(file.rows);
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(file.sha256);
+    }
+  });
+});
 
 describe("stratified sampling", () => {
   it("is deterministic, proportional and order-independent", () => {
@@ -32,10 +71,10 @@ describe("stratified sampling", () => {
 });
 
 // Runs after `npm run data:prepare`; source data is committed in data/source.
-const BUNDLE = "data/prepared/study-bundle.json";
+const BUNDLE = "data/study/prepared/real-pocqi-bundle.json";
 describe.skipIf(!existsSync(BUNDLE))("prepared Real-POCQi bundle", () => {
   const bundle = existsSync(BUNDLE) ? (JSON.parse(readFileSync(BUNDLE, "utf8")) as StudyBundle) : null;
-  const manifest = JSON.parse(readFileSync("data/sample-manifest.json", "utf8"));
+  const manifest = JSON.parse(readFileSync("data/study/real-pocqi-sample-manifest.json", "utf8"));
 
   it("has 100 questions × 8 responses × 8 judges, all linked by ID", () => {
     const items = bundle!.items;
@@ -67,7 +106,7 @@ describe.skipIf(!existsSync(BUNDLE))("prepared Real-POCQi bundle", () => {
 });
 
 // Runs only after `npm run data:fetch && npm run data:prepare`.
-const MEDSP_BUNDLE = "data/prepared/medsp1000-bundle.json";
+const MEDSP_BUNDLE = "data/study/prepared/medsp1000-bundle.json";
 const MEDSP_SCENARIOS = ".source/Medical-LLM-Self-Preference/data/question_sets/medsp1000_generation_cases.jsonl";
 describe.skipIf(!existsSync(MEDSP_BUNDLE))("prepared MedSP1000 bundle", () => {
   const bundle = existsSync(MEDSP_BUNDLE) ? (JSON.parse(readFileSync(MEDSP_BUNDLE, "utf8")) as StudyBundle) : null;

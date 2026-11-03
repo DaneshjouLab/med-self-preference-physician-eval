@@ -10,7 +10,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@electric-sql/pglite", "pg"],
   poweredByHeader: false,
-  // Migrations are applied at startup; ship only them (never .source/ or data/prepared/).
+  // Migrations are applied at startup; ship only them (never .source/ or data/study/prepared/).
   outputFileTracingIncludes: { "/**/*": ["./drizzle/**/*"] },
   outputFileTracingExcludes: { "/**/*": ["./.source/**/*", "./data/**/*", "./.data/**/*"] },
   async headers() {

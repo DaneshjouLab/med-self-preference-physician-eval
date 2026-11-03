@@ -21,8 +21,8 @@ import { applyPlan, defaultPlanSeed, planStatus } from "../src/server/plans";
 const DEMO_ITEMS = 5;
 const WITH_PLANS = process.argv.includes("--plans");
 const BUNDLES: Record<StudyId, string> = {
-  real_pocqi: "data/prepared/study-bundle.json",
-  medsp1000: "data/prepared/medsp1000-bundle.json",
+  real_pocqi: "data/study/prepared/real-pocqi-bundle.json",
+  medsp1000: "data/study/prepared/medsp1000-bundle.json",
 };
 
 if (process.env.DATABASE_URL) {

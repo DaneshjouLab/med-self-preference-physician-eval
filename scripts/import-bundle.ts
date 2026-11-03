@@ -8,8 +8,8 @@ import { validateStudyData } from "../src/server/admin";
 import { importBundle, type StudyBundle } from "../src/server/importer";
 
 export const BUNDLE_FILES = {
-  real_pocqi: "data/prepared/study-bundle.json",
-  medsp1000: "data/prepared/medsp1000-bundle.json",
+  real_pocqi: "data/study/prepared/real-pocqi-bundle.json",
+  medsp1000: "data/study/prepared/medsp1000-bundle.json",
 } as const;
 
 function arg(name: string) {

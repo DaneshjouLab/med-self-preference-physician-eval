@@ -1,28 +1,32 @@
 {
   "bundle_version": "1",
+  "study": "real_pocqi",
   "study_seed": "pe-real-pocqi-v1",
   "sample_size": 100,
-  "sampling": "stratified by specialty; proportional allocation (largest remainder, min 1); hashSort within stratum; hashSort overall order",
+  "sampling": "Frozen 100-question sample, stratified by specialty with proportional allocation (largest remainder, minimum 1); hashSort within stratum and overall order",
   "source_repository": "DaneshjouLab/Medical-LLM-Self-Preference",
-  "source_commit": "2e0462248e33ab391b7afa457f1e06a2d4408e97",
+  "source_commit": "a40d3617a2e55cb6fe4255198a4b05ba774c3f4c",
   "source_dataset": "jjfenglab/Real-POCQi",
   "source_files": {
     "questions": {
-      "path": "data/question_sets/real_pocqi_questions.jsonl",
-      "sha256": "61e2e5e5c0d4fd6c5e62227739ed7cfc303aeda4137fb9651ef8a1d82cb44b60"
+      "path": "data/source/real-pocqi-questions.jsonl",
+      "sha256": "1f39f6304f7887fcb58126686115cf2461706887ba8395eaebb249e84b01c7aa",
+      "rows": 100
     },
-    "generations": {
-      "path": "data/outputs/generations/real_pocqi_generations.jsonl",
-      "sha256": "288149c7d14a1efe3a0810d23992a8d55d01182f038d36c64ce1949525bdbd14"
+    "answers": {
+      "path": "data/source/real-pocqi-answers.jsonl",
+      "sha256": "7b1a0d43e0159d0f606068ff7096d9b822887af7ac35074680faa0acf6103f68",
+      "rows": 800
     },
     "judgments": {
-      "path": "data/real_pcoqi/judgements/rubric_and_model_ranking.jsonl",
-      "sha256": "1d812cfb5f6380d1b118f03314df7e12604688a0f653f565a43e1ae50272d7f9"
+      "path": "data/source/real-pocqi-llm-judgments.jsonl",
+      "sha256": "ce81a1efedcbc8a0df35c583c8cf469990a1d392bb2724dd05dd1a4890c27e04",
+      "rows": 6400
     }
   },
   "judging_experiment_id": "real_pocqi_combined_all_judges_v1",
   "judging_condition": "rubric_and_model_ranking",
-  "judgment_selection": "status=succeeded, experiment_id=production, last row per (question_id, judge_model) in file order",
+  "judgment_selection": "Successful production judgment selected upstream; frozen rows preserve the exact generation IDs, ranks, and scores used for this cohort",
   "allocation_by_specialty": {
     "Allergy & Immunology": 3,
     "Anesthesiology": 2,

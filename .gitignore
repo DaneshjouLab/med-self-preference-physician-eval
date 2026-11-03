@@ -4,7 +4,7 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 
-# Local database, downloaded source repository and prepared data (contain the protected model mapping)
+# Local database, optional historical source checkout and generated prepared bundle
 .data/
 .source/
 data/prepared/

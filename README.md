@@ -22,15 +22,17 @@ Which model produced each candidate is hidden.
 The data are stored so that every physician judgment can be joined, by ID, to the
 original LLM judges' rankings and scores.
 
-The source data comes from
+The study data was derived from
 [DaneshjouLab/Medical-LLM-Self-Preference](https://github.com/DaneshjouLab/Medical-LLM-Self-Preference),
 pinned at commit `2e0462248e33ab391b7afa457f1e06a2d4408e97` ("Restore eight-model MedSP1000
-results"). That repository is only read, never modified.
+results"). The frozen Real-POCQi cohort is committed under `data/source/`; only MedSP1000
+preparation uses the pinned checkout.
 
 | Document | Contents |
 |---|---|
 | [docs/METHODS.md](docs/METHODS.md) | Data audit, sampling, randomization, blinding, limitations, pre-deployment checklist |
 | [docs/DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md) | Every exported column |
+| [data/source/manifest.json](data/source/manifest.json) | Checksums and provenance for the committed Real-POCQi questions, answers and judgments |
 | [data/sample-manifest.json](data/sample-manifest.json) | The frozen 100-question Real-POCQi sample: question IDs, seed, source file hashes |
 | [data/medsp1000-sample-manifest.json](data/medsp1000-sample-manifest.json) | The frozen 100-scenario MedSP1000 sample: scenario IDs, seed, source file hashes |
 
@@ -38,7 +40,7 @@ results"). That repository is only read, never modified.
 
 | Done and tested locally | Not done |
 |---|---|
-| Real-POCQi preparation: all 620 questions validated, 100 sampled | Deployment to a hosted server |
+| Self-contained Real-POCQi source: 100 questions, 800 answers and 6,400 judgment rows | Deployment to a hosted server |
 | MedSP1000 preparation: all 200 scenarios validated (8 models, 8 turns), 100 sampled | The timed pilot and the real study plans (waiting for physicians and approvals) |
 | Grading for both studies: login, instructions, blinded grading, autosave, resume, submit, lock | MedSP1000 at 2, 4 or 6 visible turns (only the full 8-turn view is prepared) |
 | **Study plans:** calibration + rotating blocks, preview, apply, block progress | IRB, data-use and de-identification sign-off (see METHODS §9) |
@@ -76,7 +78,8 @@ Then open http://localhost:3123 and sign in with the password `physicantest`:
 | `sp-reviewer1`, `sp-reviewer2` | MedSP1000: 5 scenarios (8-turn conversations) |
 | `admin` | Dashboard and exports for both studies |
 
-`npm run demo` downloads the research data (about 290 MB, first run only), prepares and
+`npm run demo` downloads the MedSP1000 research data (first run only), validates the
+committed Real-POCQi source, prepares and
 imports all 100 cases of each study, creates the demo accounts (each with 5 cases) and starts
 the app.
 
@@ -91,13 +94,13 @@ use them for real reviewers.
 ```bash
 npm install
 
-# 1. Get the original research data at the pinned commit. The two large LFS judgment
-#    files (Real-POCQi, MedSP1000 8-turn) are downloaded from GitHub's media endpoint,
-#    checked against the sha256 in their LFS pointers and cached in .source/lfs-cache.
+# 1. Get MedSP1000 from the pinned research commit. Its 8-turn LFS judgment file is
+#    downloaded from GitHub's media endpoint, checked against the sha256 in its LFS
+#    pointer and cached in .source/lfs-cache. Real-POCQi is already in data/source/.
 npm run data:fetch
 
-# 2. Build both study bundles deterministically. This validates all 620 Real-POCQi
-#    questions and all 200 MedSP1000 scenarios, and writes the frozen samples:
+# 2. Build both study bundles deterministically. This validates the committed 100-question
+#    Real-POCQi cohort and all 200 MedSP1000 scenarios, and writes the frozen samples:
 #      data/prepared/study-bundle.json        gitignored; Real-POCQi, contains the model mapping
 #      data/prepared/medsp1000-bundle.json    gitignored; MedSP1000, contains the model mapping
 #      data/sample-manifest.json              committed; no answer text or model mapping
@@ -159,7 +162,8 @@ Coverage of the QA list in the study brief:
 | `COOKIE_SECURE` | Set to `true` whenever the app is served over HTTPS. |
 
 Copy `.env.example` to `.env`. Never commit `.env`, `data/prepared/`, `.source/` or `.data/`;
-all four are gitignored.
+all four are gitignored. `data/source/` is intentionally committed and is the canonical
+Real-POCQi input.
 
 The **grading instrument** is fixed to the study design: all five rubric scores are required
 for every answer, and the optional clinical-error question is shown. There is no setting for
@@ -217,6 +221,7 @@ Physicians need only a browser and the credentials you give them.
 
 ```
 scripts/            fetch-source, prepare-data, prepare-medsp1000, import-bundle, create-user, seed-demo, migrate, e2e-prototype
+data/source/        committed Real-POCQi questions, answers, LLM judgments and checksum manifest
 src/lib/            shared logic: studies, rubric, evaluation state + validation, ordering, study plan generator, sampling/prep
 src/db/             Drizzle schema + connection (PGlite or Postgres)
 drizzle/            SQL migrations

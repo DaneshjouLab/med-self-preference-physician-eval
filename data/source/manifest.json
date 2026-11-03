@@ -1,0 +1,30 @@
+{
+  "bundle_version": "1",
+  "study": "real_pocqi",
+  "study_seed": "pe-real-pocqi-v1",
+  "sample_size": 100,
+  "sampling": "Frozen 100-question sample, stratified by specialty with proportional allocation (largest remainder, minimum 1); hashSort within stratum and overall order",
+  "source_repository": "DaneshjouLab/Medical-LLM-Self-Preference",
+  "source_commit": "a40d3617a2e55cb6fe4255198a4b05ba774c3f4c",
+  "source_dataset": "jjfenglab/Real-POCQi",
+  "source_files": {
+    "questions": {
+      "path": "data/source/real-pocqi-questions.jsonl",
+      "sha256": "1f39f6304f7887fcb58126686115cf2461706887ba8395eaebb249e84b01c7aa",
+      "rows": 100
+    },
+    "answers": {
+      "path": "data/source/real-pocqi-answers.jsonl",
+      "sha256": "7b1a0d43e0159d0f606068ff7096d9b822887af7ac35074680faa0acf6103f68",
+      "rows": 800
+    },
+    "judgments": {
+      "path": "data/source/real-pocqi-llm-judgments.jsonl",
+      "sha256": "ce81a1efedcbc8a0df35c583c8cf469990a1d392bb2724dd05dd1a4890c27e04",
+      "rows": 6400
+    }
+  },
+  "judging_experiment_id": "real_pocqi_combined_all_judges_v1",
+  "judging_condition": "rubric_and_model_ranking",
+  "judgment_selection": "Successful production judgment selected upstream; frozen rows preserve the exact generation IDs, ranks, and scores used for this cohort"
+}

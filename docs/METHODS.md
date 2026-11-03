@@ -2,9 +2,11 @@
 
 ## 1. Source data audit
 
-**Source:** `DaneshjouLab/Medical-LLM-Self-Preference` at commit
+**Original source:** `DaneshjouLab/Medical-LLM-Self-Preference`. The Real-POCQi cohort is
+frozen in this repository under `data/source/`, so its preparation requires no clone,
+network access or Git LFS. MedSP1000 is fetched at commit
 `2e0462248e33ab391b7afa457f1e06a2d4408e97` ("Restore eight-model MedSP1000 results",
-2026-10-21), fetched by `npm run data:fetch`.
+2026-10-21).
 
 The app was first built against `a40d3617`, which only had 6-model MedSP1000 data. The
 Real-POCQi files are byte-identical in both commits, and re-preparing on the new commit
@@ -12,25 +14,25 @@ produced exactly the same Real-POCQi questions and answers.
 
 ### Real-POCQi
 
-| Need | File in source repo | Finding |
+| Need | Committed file | Finding |
 |---|---|---|
-| Questions | `data/question_sets/real_pocqi_questions.jsonl` | 620 questions, 30 specialties. Fields: `question_id` (UUID), `question_text`, `specialty`, and provenance (`source_revision`, `source_row_index`). No other context exists. |
-| Answers | `data/outputs/generations/real_pocqi_generations.jsonl` | 5,051 attempts and 4,960 judged answers (620 × 8). Qwen has 86 extra successful generations from truncation retries. |
-| LLM judgments | `data/real_pcoqi/judgements/rubric_and_model_ranking.jsonl` (Git LFS) | 4,960 successful production judgments (620 × 8 judges). Each lists the exact `generation_id` of every candidate it ranked. |
-| Rubric and prompts | `src/judging/real_pocqi.py`, `src/judging/judge_real_pocqi.py` | The five axes match the study brief word for word. Judges saw only `CLINICAL SPECIALTY` and `CLINICAL QUESTION`, followed by the candidates. |
+| Questions | `data/source/real-pocqi-questions.jsonl` | 100 frozen questions across 30 specialties, including original IDs, sample order and provenance. |
+| Answers | `data/source/real-pocqi-answers.jsonl` | 800 exact model answers (8 per question), with stable IDs, text hashes and generator provenance. |
+| LLM judgments | `data/source/real-pocqi-llm-judgments.jsonl` | 6,400 rows (8 judges × 8 answers × 100 questions), preserving ranks, rubric scores and presentation labels. |
+| Integrity and provenance | `data/source/manifest.json` | Original repository/commit, frozen sampling method, row counts and SHA-256 for every file. |
 
-**Validation.** `npm run data:prepare` validates all 620 questions, not only the sampled
-ones. For every question it checks:
+**Validation.** `scripts/prepare-data.ts` verifies every committed file against its manifest
+hash and validates all 100 study questions. For every question it checks:
 - exactly 8 judges;
 - all judges saw the same 8 `generation_id`s;
 - 8 distinct generators;
-- every generation exists, succeeded, and belongs to the question;
-- question text and specialty are identical across the question set, generations and
-  judgments;
+- every answer and judgment belongs to a known question and response;
+- every answer text matches its recorded SHA-256;
 - every ranking is a permutation;
 - all five scores are present.
 
-**All 620 questions pass.** None of the judged generations hit the output-length limit.
+**All 100 frozen questions pass.** The earlier audit against all 620 upstream questions
+established the sample and exact judged generation IDs before these files were frozen.
 
 **Which answer version is used.** Answers are taken by the `generation_id` the judges
 actually saw, never by "latest attempt". This handles the 86 duplicate Qwen generations.
@@ -69,8 +71,7 @@ the paper's +0.57, +0.53, +0.62 and +0.61.
 
 This section covers Real-POCQi; MedSP1000 sampling is described in §7.
 
-`stratifiedSample` in `src/lib/prep/realPocqi.ts` draws 100 of the 620 questions with
-seed `pe-real-pocqi-v1`:
+The committed cohort was drawn from the 620-question set with seed `pe-real-pocqi-v1`:
 
 1. **Allocation:** proportional allocation across the 30 specialties by the largest-remainder
    method, with at least 1 question per specialty. The resulting allocation is recorded in
@@ -80,8 +81,8 @@ seed `pe-real-pocqi-v1`:
 3. **Overall order:** the 100 are ordered by `sha256("<seed>:order:<question_id>")`.
    The first 5 are the prototype questions.
 
-Because only SHA-256 is used, any language can reproduce the sample exactly. Re-running
-`data:prepare` produces byte-identical output, which was verified.
+The selected IDs and order are frozen in `data/source/real-pocqi-questions.jsonl`.
+Re-running the Real-POCQi preparation validates the checksums and produces deterministic output.
 
 ## 3. Presentation order and counterbalancing
 

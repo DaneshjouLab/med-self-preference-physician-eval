@@ -1,113 +1,176 @@
-// Build the study bundle from the pinned research repository checkout.
+// Validate the repository-owned study source and build the importable bundle.
 //
-//   npm run data:prepare                       # 100-question stratified sample
-//   npm run data:prepare -- --size 100 --seed pe-real-pocqi-v1
+// Inputs (committed; no network or external repository required)
+//   data/source/real-pocqi-questions.jsonl
+//   data/source/real-pocqi-answers.jsonl
+//   data/source/real-pocqi-llm-judgments.jsonl
+//   data/source/manifest.json
 //
 // Outputs
-//   data/prepared/study-bundle.json  (gitignored: contains the protected model mapping)
-//   data/sample-manifest.json        (committed: sampled question IDs, seed, source hashes)
+//   data/prepared/study-bundle.json  (gitignored build artifact)
+//   data/sample-manifest.json        (committed inventory)
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { sha256Hex } from "../src/lib/hash";
 import {
-  buildItem,
-  JUDGING_CONDITION,
-  PRODUCTION_JUDGING_EXPERIMENT,
-  REAL_POCQI_DATASET,
-  selectJudgments,
-  stratifiedSample,
-  type SourceGeneration,
-  type SourceJudgment,
-  type SourceQuestion,
-} from "../src/lib/prep/realPocqi";
-import { SOURCE_COMMIT, SOURCE_REPO } from "../src/lib/prep/source";
+  RUBRIC_AXES as AXES,
+  type BundleItem,
+  type BundleJudgmentRow,
+  type BundleResponse,
+} from "../src/lib/prep/bundle";
 
-const SOURCE = path.resolve(".source/Medical-LLM-Self-Preference");
-const FILES = {
-  questions: "data/question_sets/real_pocqi_questions.jsonl",
-  generations: "data/outputs/generations/real_pocqi_generations.jsonl",
-  judgments: "data/real_pcoqi/judgements/rubric_and_model_ranking.jsonl",
-};
+const SOURCE_MANIFEST = path.resolve("data/source/manifest.json");
 
-function arg(name: string, fallback: string) {
-  const i = process.argv.indexOf(`--${name}`);
-  return i >= 0 ? process.argv[i + 1] : fallback;
+interface SourceFile {
+  path: string;
+  sha256: string;
+  rows: number;
 }
 
-function readJsonl<T>(rel: string): { rows: T[]; sha256: string } {
-  const buf = readFileSync(path.join(SOURCE, rel));
-  const text = buf.toString("utf8");
-  if (text.startsWith("version https://git-lfs")) throw new Error(`${rel} is an LFS pointer; run npm run data:fetch`);
-  const rows = text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l) as T);
-  return { rows, sha256: createHash("sha256").update(buf).digest("hex") };
+interface SourceManifest {
+  bundle_version: string;
+  study: "real_pocqi";
+  study_seed: string;
+  sample_size: number;
+  sampling: string;
+  source_repository: string;
+  source_commit: string;
+  source_dataset: string;
+  source_files: { questions: SourceFile; answers: SourceFile; judgments: SourceFile };
+  judging_experiment_id: string;
+  judging_condition: string;
+  judgment_selection: string;
+}
+
+type SourceQuestion = Omit<BundleItem, "responses" | "llm_judgments">;
+type SourceAnswer = BundleResponse & { item_id: string };
+type SourceJudgment = BundleJudgmentRow & { item_id: string };
+
+function check(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
+
+function readJsonl<T>(file: SourceFile): T[] {
+  const absolute = path.resolve(file.path);
+  const bytes = readFileSync(absolute);
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  check(digest === file.sha256, `${file.path}: sha256 mismatch (got ${digest}, expected ${file.sha256})`);
+  const rows = bytes
+    .toString("utf8")
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line, index) => {
+      try {
+        return JSON.parse(line) as T;
+      } catch (error) {
+        throw new Error(`${file.path}:${index + 1}: invalid JSON`, { cause: error });
+      }
+    });
+  check(rows.length === file.rows, `${file.path}: expected ${file.rows} rows, found ${rows.length}`);
+  return rows;
+}
+
+function validateItem(item: BundleItem) {
+  const label = item.item_id;
+  check(item.study === "real_pocqi", `${label}: wrong study`);
+  check(item.item_type === "single_turn", `${label}: unsupported item type`);
+  check(item.turn_count === null, `${label}: single-turn item has a turn count`);
+  check(item.specialty?.trim(), `${label}: missing specialty`);
+  check(item.question_text.trim().length > 0, `${label}: empty question`);
+  check(item.responses.length === 8, `${label}: expected 8 answers, found ${item.responses.length}`);
+  check(new Set(item.responses.map((response) => response.response_id)).size === 8, `${label}: duplicate response IDs`);
+  check(
+    new Set(item.responses.map((response) => response.provenance.generator_model)).size === 8,
+    `${label}: duplicate generator models`,
+  );
+  for (const response of item.responses) {
+    check(response.response_text.trim().length > 0, `${label}/${response.response_id}: empty answer`);
+    check(
+      sha256Hex(response.response_text) === response.provenance.response_text_sha256,
+      `${label}/${response.response_id}: answer hash mismatch`,
+    );
+  }
+
+  check(item.llm_judgments.length === 64, `${label}: expected 64 judgment rows, found ${item.llm_judgments.length}`);
+  const responseIds = new Set(item.responses.map((response) => response.response_id));
+  const byJudge = new Map<string, BundleJudgmentRow[]>();
+  for (const judgment of item.llm_judgments) {
+    check(responseIds.has(judgment.response_id), `${label}: judgment refers to unknown response ${judgment.response_id}`);
+    check(AXES.every((axis) => typeof judgment.scores[axis] === "number"), `${label}: incomplete judgment scores`);
+    const rows = byJudge.get(judgment.judge_model) ?? [];
+    rows.push(judgment);
+    byJudge.set(judgment.judge_model, rows);
+  }
+  check(byJudge.size === 8, `${label}: expected 8 judges, found ${byJudge.size}`);
+  for (const [judge, rows] of byJudge) {
+    check(rows.length === 8, `${label}/${judge}: expected 8 ranked answers, found ${rows.length}`);
+    check(new Set(rows.map((row) => row.response_id)).size === 8, `${label}/${judge}: duplicate ranked answer`);
+    check(
+      rows.map((row) => row.original_rank).sort((a, b) => a - b).join(",") === "1,2,3,4,5,6,7,8",
+      `${label}/${judge}: ranks are not a 1-8 permutation`,
+    );
+  }
 }
 
 function main() {
-  const seed = arg("seed", "pe-real-pocqi-v1");
-  const size = Number(arg("size", "100"));
-  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: SOURCE }).toString().trim();
-  if (head !== SOURCE_COMMIT) throw new Error(`source checkout at ${head}, expected ${SOURCE_COMMIT}`);
+  const meta = JSON.parse(readFileSync(SOURCE_MANIFEST, "utf8")) as SourceManifest;
+  const questions = readJsonl<SourceQuestion>(meta.source_files.questions);
+  const answers = readJsonl<SourceAnswer>(meta.source_files.answers);
+  const judgments = readJsonl<SourceJudgment>(meta.source_files.judgments);
 
-  const questions = readJsonl<SourceQuestion>(FILES.questions);
-  const generations = readJsonl<SourceGeneration>(FILES.generations);
-  const judgments = readJsonl<SourceJudgment>(FILES.judgments);
+  check(questions.length === meta.sample_size, `expected ${meta.sample_size} questions, found ${questions.length}`);
+  check(new Set(questions.map((question) => question.item_id)).size === questions.length, "duplicate item IDs");
+  check(new Set(questions.map((question) => question.source_question_id)).size === questions.length, "duplicate question IDs");
 
-  const questionIds = new Set(questions.rows.map((q) => q.question_id));
-  if (questionIds.size !== questions.rows.length) throw new Error("duplicate question IDs in question set");
-  const generationsById = new Map(generations.rows.map((g) => [g.generation_id, g]));
-  if (generationsById.size !== generations.rows.length) throw new Error("duplicate generation IDs");
-  const judgmentsByQuestion = selectJudgments(judgments.rows);
+  const answersByItem = new Map<string, BundleResponse[]>();
+  for (const { item_id, ...answer } of answers) {
+    const rows = answersByItem.get(item_id) ?? [];
+    rows.push(answer);
+    answersByItem.set(item_id, rows);
+  }
+  const judgmentsByItem = new Map<string, BundleJudgmentRow[]>();
+  for (const { item_id, ...judgment } of judgments) {
+    const rows = judgmentsByItem.get(item_id) ?? [];
+    rows.push(judgment);
+    judgmentsByItem.set(item_id, rows);
+  }
 
-  // Validate every question, not only the sampled ones, so data problems surface early.
-  const built = new Map(
-    questions.rows.map((q) => [
-      q.question_id,
-      buildItem({ question: q, sampleIndex: -1, judgments: judgmentsByQuestion.get(q.question_id) ?? [], generationsById }),
-    ]),
-  );
-  console.log(`Validated ${built.size} questions × 8 responses × 8 judges`);
+  const knownItems = new Set(questions.map((question) => question.item_id));
+  for (const itemId of [...answersByItem.keys(), ...judgmentsByItem.keys()]) {
+    check(knownItems.has(itemId), `source row refers to unknown item ${itemId}`);
+  }
 
-  const sample = stratifiedSample(questions.rows, size, seed);
-  const items = sample.map((q, i) => ({ ...built.get(q.question_id)!, sample_index: i }));
-
-  const meta = {
-    bundle_version: "1",
-    study: "real_pocqi",
-    study_seed: seed,
-    sample_size: size,
-    sampling: "stratified by specialty; proportional allocation (largest remainder, min 1); hashSort within stratum; hashSort overall order",
-    source_repository: SOURCE_REPO,
-    source_commit: SOURCE_COMMIT,
-    source_dataset: REAL_POCQI_DATASET,
-    source_files: Object.fromEntries(
-      Object.entries(FILES).map(([k, rel]) => [
-        k,
-        { path: rel, sha256: { questions, generations, judgments }[k as keyof typeof FILES].sha256 },
-      ]),
-    ),
-    judging_experiment_id: PRODUCTION_JUDGING_EXPERIMENT,
-    judging_condition: JUDGING_CONDITION,
-    judgment_selection: "status=succeeded, experiment_id=production, last row per (question_id, judge_model) in file order",
-  };
+  const items: BundleItem[] = questions
+    .map((question) => ({
+      ...question,
+      responses: answersByItem.get(question.item_id) ?? [],
+      llm_judgments: judgmentsByItem.get(question.item_id) ?? [],
+    }))
+    .sort((a, b) => a.sample_index - b.sample_index);
+  check(items.every((item, index) => item.sample_index === index), "sample indexes must be contiguous from zero");
+  items.forEach(validateItem);
 
   mkdirSync("data/prepared", { recursive: true });
   writeFileSync("data/prepared/study-bundle.json", JSON.stringify({ meta, items }, null, 1) + "\n");
 
   const allocation: Record<string, number> = {};
-  for (const it of items) allocation[it.specialty!] = (allocation[it.specialty!] ?? 0) + 1;
-  const manifest = {
+  for (const item of items) {
+    check(item.specialty, `${item.item_id}: missing specialty`);
+    allocation[item.specialty] = (allocation[item.specialty] ?? 0) + 1;
+  }
+  const sampleManifest = {
     ...meta,
     allocation_by_specialty: Object.fromEntries(Object.entries(allocation).sort()),
-    sampled_questions: items.map((it) => ({
-      sample_index: it.sample_index,
-      question_id: it.source_question_id,
-      specialty: it.specialty,
-      question_text_sha256: it.provenance.question_text_sha256,
+    sampled_questions: items.map((item) => ({
+      sample_index: item.sample_index,
+      question_id: item.source_question_id,
+      specialty: item.specialty,
+      question_text_sha256: item.provenance.question_text_sha256,
     })),
   };
-  writeFileSync("data/sample-manifest.json", JSON.stringify(manifest, null, 2) + "\n");
-  console.log(`Wrote data/prepared/study-bundle.json (${items.length} items) and data/sample-manifest.json`);
+  writeFileSync("data/sample-manifest.json", JSON.stringify(sampleManifest, null, 2) + "\n");
+  console.log(`Validated and prepared ${items.length} questions, ${answers.length} answers, and ${judgments.length} judgment rows`);
 }
 
 main();

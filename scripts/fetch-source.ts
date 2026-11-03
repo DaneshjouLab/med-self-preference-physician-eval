@@ -2,7 +2,7 @@
 // materialise the Git LFS files the app needs, verifying each against the
 // sha256 recorded in its LFS pointer. Does not require git-lfs.
 //
-//   npm run data:fetch            # files needed for Real-POCQi and MedSP1000 (8 turns)
+//   npm run data:fetch            # files needed for MedSP1000 (8 turns)
 //   npm run data:fetch -- --all   # every LFS judgment file
 //
 // Downloaded LFS objects are kept in .source/lfs-cache/<sha256> so switching the
@@ -20,7 +20,6 @@ const DEST = path.resolve(".source/Medical-LLM-Self-Preference");
 const CACHE = path.resolve(".source/lfs-cache");
 
 const REQUIRED_LFS = [
-  "data/real_pcoqi/judgements/rubric_and_model_ranking.jsonl",
   "data/outputs/medsp1000/judgements/rubric_and_model_ranking.jsonl",
 ];
 const OPTIONAL_LFS = [

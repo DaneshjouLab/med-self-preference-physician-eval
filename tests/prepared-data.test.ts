@@ -31,7 +31,7 @@ describe("stratified sampling", () => {
   });
 });
 
-// Runs only after `npm run data:fetch && npm run data:prepare`.
+// Runs after `npm run data:prepare`; source data is committed in data/source.
 const BUNDLE = "data/prepared/study-bundle.json";
 describe.skipIf(!existsSync(BUNDLE))("prepared Real-POCQi bundle", () => {
   const bundle = existsSync(BUNDLE) ? (JSON.parse(readFileSync(BUNDLE, "utf8")) as StudyBundle) : null;

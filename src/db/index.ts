@@ -32,7 +32,16 @@ export function openPglite(dataDir?: string): Handle {
 }
 
 export function openPostgres(connectionString: string): Handle {
-  const pool = new Pool({ connectionString, max: 10 });
+  const serverless = process.env.VERCEL === "1";
+  const pool = new Pool({
+    connectionString,
+    // A Vercel function instance should hold at most one database connection.
+    // Long-running Node servers can keep a conventional local pool.
+    max: serverless ? 1 : 10,
+    idleTimeoutMillis: serverless ? 5_000 : 30_000,
+    connectionTimeoutMillis: 10_000,
+    allowExitOnIdle: serverless,
+  });
   const db = drizzlePg(pool, { schema });
   return {
     db: db as unknown as DB,
@@ -54,7 +63,14 @@ export function getDb(): Promise<DB> {
   if (!globalForDb.__peDb) {
     globalForDb.__peDb = (async () => {
       const handle = openFromEnv();
-      await handle.migrate();
+      // Vercel may start several function instances concurrently. Migrations
+      // are therefore run as an explicit deployment step instead of on every
+      // cold start. Local development and persistent Node servers retain the
+      // convenient migrate-on-start behavior unless explicitly disabled.
+      const migrateOnStartup = process.env.MIGRATE_ON_STARTUP
+        ? process.env.MIGRATE_ON_STARTUP === "true"
+        : process.env.VERCEL !== "1";
+      if (migrateOnStartup) await handle.migrate();
       return handle.db;
     })();
   }

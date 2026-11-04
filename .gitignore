@@ -13,3 +13,4 @@ data/study/prepared/
 .env
 .env.*
 !.env.example
+.vercel/

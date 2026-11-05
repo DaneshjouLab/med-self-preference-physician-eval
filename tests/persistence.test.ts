@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import type { DB } from "@/db";
 import { assignments, responseEvaluations, responseProvenance, saveEvents } from "@/db/schema";
-import { assignItems, reviewerProgress, validateStudyData } from "@/server/admin";
+import { assignItems, reviewerProgress, setManualAssignments, validateStudyData } from "@/server/admin";
 import { login, userForToken } from "@/server/auth";
 import {
   listQueue,
@@ -158,6 +158,33 @@ describe("multiple reviewers", () => {
   it("can only address the reviewer's own queue", async () => {
     // Positions are per-reviewer; there is no way to name another reviewer's assignment.
     await expect(loadEvaluation(db, r1.userId, S, 4)).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("manual assignment editing", () => {
+  it("adds and removes unstarted questions by frozen study number", async () => {
+    await expect(setManualAssignments(db, r1.userId, S, [1, 3])).resolves.toEqual({ assigned: 2, added: 0, removed: 1 });
+    let progress = (await reviewerProgress(db)).find((r) => r.userId === r1.userId)!.studies.at(0)!;
+    expect(progress.questions).toEqual([
+      { number: 1, status: "not_started" },
+      { number: 3, status: "not_started" },
+    ]);
+
+    await expect(setManualAssignments(db, r1.userId, S, [2, 3])).resolves.toEqual({ assigned: 2, added: 1, removed: 1 });
+    progress = (await reviewerProgress(db)).find((r) => r.userId === r1.userId)!.studies.at(0)!;
+    expect(progress.questions).toEqual([
+      { number: 2, status: "not_started" },
+      { number: 3, status: "not_started" },
+    ]);
+    expect((await validateStudyData(db)).ok).toBe(true);
+  });
+
+  it("protects saved work and rejects question numbers that were not imported", async () => {
+    const partial = completeState();
+    partial.rankingConfirmed = false;
+    await saveEvaluation(db, r1.userId, S, 1, { state: partial, baseRevision: 0 });
+    await expect(setManualAssignments(db, r1.userId, S, [2, 3])).rejects.toThrow(/saved work/);
+    await expect(setManualAssignments(db, r1.userId, S, [1, 2, 4])).rejects.toThrow(/not imported/);
   });
 });
 

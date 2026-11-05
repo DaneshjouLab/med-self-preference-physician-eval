@@ -1,6 +1,6 @@
 // Administrator operations. Callers must have verified role === "admin".
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, isNotNull, isNull, max, notInArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, max, notInArray, sql } from "drizzle-orm";
 import type { DB } from "@/db";
 import { assignments, items, llmJudgments, responseProvenance, responses, studyPlans, users } from "@/db/schema";
 import { sha256Hex } from "@/lib/hash";
@@ -168,6 +168,105 @@ export async function assignItems(db: DB, reviewerId: string, opts: { study: Stu
       position++;
     }
     return { assigned: candidates.length };
+  });
+}
+
+export class ManualAssignmentError extends Error {}
+
+/**
+ * Replace a reviewer's manual assignments with the requested frozen study
+ * question numbers. Existing work and plan-managed assignments are protected.
+ */
+export async function setManualAssignments(
+  db: DB,
+  reviewerId: string,
+  study: StudyId,
+  questionNumbers: number[],
+): Promise<{ assigned: number; added: number; removed: number }> {
+  const wanted = [...new Set(questionNumbers)].sort((a, b) => a - b);
+  if (wanted.some((n) => !Number.isInteger(n) || n < 1)) throw new ManualAssignmentError("Question numbers must be positive integers");
+
+  const seed = await getStudySeed(db, study);
+  if (!seed) throw new ManualAssignmentError(`No ${STUDIES[study].name} questions have been imported`);
+
+  return db.transaction(async (tx) => {
+    const [reviewer] = await tx.select().from(users).where(eq(users.userId, reviewerId));
+    if (!reviewer || reviewer.role !== "reviewer") throw new ManualAssignmentError("Reviewer not found");
+
+    const requestedItems = wanted.length
+      ? await tx
+          .select({ itemId: items.itemId, questionNumber: sql<number>`${items.sampleIndex} + 1` })
+          .from(items)
+          .where(and(eq(items.study, study), inArray(items.sampleIndex, wanted.map((n) => n - 1))))
+      : [];
+    const found = new Set(requestedItems.map((i) => i.questionNumber));
+    const missing = wanted.filter((n) => !found.has(n));
+    if (missing.length) {
+      throw new ManualAssignmentError(
+        `${STUDIES[study].name} question${missing.length === 1 ? "" : "s"} ${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} not imported`,
+      );
+    }
+
+    const live = await tx
+      .select({
+        assignmentId: assignments.assignmentId,
+        itemId: assignments.itemId,
+        status: assignments.status,
+        planId: assignments.planId,
+        questionNumber: sql<number>`${items.sampleIndex} + 1`,
+      })
+      .from(assignments)
+      .innerJoin(items, eq(items.itemId, assignments.itemId))
+      .where(and(eq(assignments.reviewerId, reviewerId), eq(assignments.study, study), isNull(assignments.transferredAt)));
+    const wantedSet = new Set(wanted);
+    const removing = live.filter((a) => !wantedSet.has(a.questionNumber));
+    const planManaged = removing.filter((a) => a.planId !== null).map((a) => a.questionNumber);
+    if (planManaged.length) {
+      throw new ManualAssignmentError(`Question${planManaged.length === 1 ? "" : "s"} ${planManaged.join(", ")} belong to an applied study plan and cannot be removed here`);
+    }
+    const started = removing.filter((a) => a.status !== "not_started").map((a) => a.questionNumber);
+    if (started.length) {
+      throw new ManualAssignmentError(`Question${started.length === 1 ? "" : "s"} ${started.join(", ")} already contain saved work and cannot be removed`);
+    }
+
+    if (removing.length) {
+      await tx.delete(assignments).where(inArray(assignments.assignmentId, removing.map((a) => a.assignmentId)));
+    }
+
+    const liveItemIds = new Set(live.map((a) => a.itemId));
+    const adding = requestedItems.filter((i) => !liveItemIds.has(i.itemId));
+    if (adding.length) {
+      const historical = await tx
+        .select({ itemId: assignments.itemId })
+        .from(assignments)
+        .where(and(eq(assignments.reviewerId, reviewerId), inArray(assignments.itemId, adding.map((a) => a.itemId))));
+      if (historical.length) throw new ManualAssignmentError("A transferred historical assignment cannot be assigned back to the same reviewer");
+    }
+
+    const [{ next }] = await tx
+      .select({ next: sql<number>`coalesce(max(${assignments.queuePosition}) + 1, 0)::int` })
+      .from(assignments)
+      .where(and(eq(assignments.reviewerId, reviewerId), eq(assignments.study, study), isNull(assignments.transferredAt)));
+    let position = next;
+    for (const item of adding.sort((a, b) => a.questionNumber - b.questionNumber)) {
+      const responseIds = (await tx.select({ id: responses.responseId }).from(responses).where(eq(responses.itemId, item.itemId))).map((r) => r.id);
+      await tx.insert(assignments).values({
+        assignmentId: randomUUID(),
+        reviewerId,
+        itemId: item.itemId,
+        study,
+        queuePosition: position++,
+        presentationOrder: presentationOrder({
+          studySeed: seed,
+          itemId: item.itemId,
+          responseIds,
+          queuePosition: position - 1,
+          reviewerSlot: reviewer.reviewerSlot,
+        }),
+      });
+    }
+
+    return { assigned: wanted.length, added: adding.length, removed: removing.length };
   });
 }
 

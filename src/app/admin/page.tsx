@@ -3,20 +3,17 @@ import { SimpleHeader } from "@/components/SimpleHeader";
 import { STUDY_IDS, type StudyId } from "@/lib/studies";
 import { itemCounts, reviewerProgress, validateStudyData } from "@/server/admin";
 import { requirePageUser } from "@/server/http";
-import { defaultPlanSeed, eligibleReviewers, planStatus } from "@/server/plans";
 import { getStudySeed } from "@/server/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const { user, db } = await requirePageUser("admin");
-  const [reviewers, counts, validation, seeds, plans, eligible] = await Promise.all([
+  const [reviewers, counts, validation, seeds] = await Promise.all([
     reviewerProgress(db),
     itemCounts(db),
     validateStudyData(db),
     Promise.all(STUDY_IDS.map(async (s) => [s, await getStudySeed(db, s)] as const)),
-    Promise.all(STUDY_IDS.map(async (s) => [s, await planStatus(db, s)] as const)),
-    Promise.all(STUDY_IDS.map(async (s) => [s, await eligibleReviewers(db, s)] as const)),
   ]);
   return (
     <>
@@ -33,9 +30,6 @@ export default async function AdminPage() {
         itemCounts={counts}
         validation={validation}
         studySeeds={Object.fromEntries(seeds) as Record<StudyId, string | null>}
-        plans={Object.fromEntries(plans) as Record<StudyId, Awaited<ReturnType<typeof planStatus>>>}
-        eligible={Object.fromEntries(eligible) as Record<StudyId, Awaited<ReturnType<typeof eligibleReviewers>>>}
-        defaultPlanSeeds={Object.fromEntries(STUDY_IDS.map((s) => [s, defaultPlanSeed(s)])) as Record<StudyId, string>}
       />
     </>
   );

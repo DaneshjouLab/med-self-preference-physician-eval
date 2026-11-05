@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { STUDIES, STUDY_IDS, type StudyId } from "@/lib/studies";
 import type { ReviewerProgress, StudyProgress, ValidationReport } from "@/server/admin";
-import type { PlanStatus } from "@/server/plans";
-import { StudyPlanCard, type EligibleReviewer } from "./StudyPlanCard";
 import { Button, Card, cx, Pill, SectionLabel } from "./ui";
 
 type SerializedStudy = Omit<StudyProgress, "submittedAt" | "lastSavedAt"> & { submittedAt: string | null; lastSavedAt: string | null };
@@ -18,7 +16,6 @@ const DATASETS = [
   ["llm_judgments", "Original LLM judgments", "Every judge's rank and scores for imported questions."],
   ["response_key", "Response key (unblinding)", "response_id → generator model and original generation_id."],
   ["analysis", "Analysis-ready join", "Physician judgments × every LLM judge for the same response, joined by ID."],
-  ["plan", "Study plans", "Every planned case with its block (or calibration) and its graders by position."],
   ["reviewers", "Reviewer background", "Reviewer code, specialty and years in practice; no names."],
 ] as const;
 
@@ -34,17 +31,11 @@ export function AdminPanel({
   itemCounts,
   validation,
   studySeeds,
-  plans,
-  eligible,
-  defaultPlanSeeds,
 }: {
   reviewers: Reviewer[];
   itemCounts: Record<StudyId, number>;
   validation: ValidationReport;
   studySeeds: Record<StudyId, string | null>;
-  plans: Record<StudyId, PlanStatus | null>;
-  eligible: Record<StudyId, EligibleReviewer[]>;
-  defaultPlanSeeds: Record<StudyId, string>;
 }) {
   const [message, setMessage] = useState<{ tone: "done" | "danger"; text: string } | null>(null);
   const run = async (fn: () => Promise<string | void>) => {
@@ -149,22 +140,7 @@ export function AdminPanel({
                   </td>
                   <td className="px-4 py-2.5">{r.role}</td>
                   <td className="min-w-72 px-4 py-2.5">
-                    {r.studies.length === 0 ? (
-                      <span className="text-muted">{r.role === "admin" ? "—" : "No questions assigned"}</span>
-                    ) : (
-                      <div className="space-y-2.5">
-                        {r.studies.map((st) => (
-                          <div key={st.study}>
-                            <div className="mb-1 text-xs font-medium text-ink-2">{STUDIES[st.study].name}</div>
-                            <div className="flex max-w-xl flex-wrap gap-1" aria-label={`${STUDIES[st.study].name} assigned questions`}>
-                              {st.questions.map((q) => (
-                                <QuestionNumber key={q.number} number={q.number} status={q.status} />
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {r.role === "reviewer" ? <AssignmentCell reviewer={r} itemCounts={itemCounts} run={run} /> : <span className="text-muted">—</span>}
                   </td>
                   <td className="min-w-52 px-4 py-2.5">
                     {r.studies.length === 0 ? (
@@ -240,26 +216,6 @@ export function AdminPanel({
           </table>
         </div>
       </Card>
-
-      <section aria-labelledby="plans-heading" className="space-y-3">
-        <div>
-          <h2 id="plans-heading" className="text-lg font-semibold">
-            Study plans
-          </h2>
-          <p className="text-sm text-muted">Assign every physician their cases at once: calibration cases for everyone, then rotating blocks.</p>
-        </div>
-        {STUDY_IDS.map((st) => (
-          <StudyPlanCard
-            key={st}
-            study={st}
-            itemCount={itemCounts[st]}
-            status={plans[st]}
-            eligible={eligible[st]}
-            defaultSeed={defaultPlanSeeds[st]}
-            run={run}
-          />
-        ))}
-      </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <CreateReviewerForm run={run} />
@@ -364,6 +320,155 @@ function QuestionLegend() {
 type Run = (fn: () => Promise<string | void>) => Promise<void>;
 const inputCls = "mt-1 block h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm";
 
+function AssignmentCell({ reviewer, itemCounts, run }: { reviewer: Reviewer; itemCounts: Record<StudyId, number>; run: Run }) {
+  const availableStudies = STUDY_IDS.filter((study) => itemCounts[study] > 0);
+  if (availableStudies.length === 0) return <span className="text-muted">No questions imported</span>;
+  return (
+    <div className="space-y-3">
+      {availableStudies.map((study) => (
+        <StudyAssignmentEditor
+          key={study}
+          reviewer={reviewer}
+          study={study}
+          count={itemCounts[study]}
+          progress={reviewer.studies.find((s) => s.study === study)}
+          run={run}
+        />
+      ))}
+    </div>
+  );
+}
+
+function StudyAssignmentEditor({
+  reviewer,
+  study,
+  count,
+  progress,
+  run,
+}: {
+  reviewer: Reviewer;
+  study: StudyId;
+  count: number;
+  progress: SerializedStudy | undefined;
+  run: Run;
+}) {
+  const existing = progress?.questions ?? [];
+  const [editing, setEditing] = useState(false);
+  const [spec, setSpec] = useState(formatQuestionNumbers(existing.map((q) => q.number)));
+  const parsed = parseQuestionNumbers(spec, count);
+  const existingStatus = new Map(existing.map((q) => [q.number, q.status] as const));
+  const protectedRemoved = existing.filter((q) => q.status !== "not_started" && !parsed.numbers.includes(q.number)).map((q) => q.number);
+  const error = parsed.error ?? (protectedRemoved.length ? `Questions ${protectedRemoved.join(", ")} contain saved work and cannot be removed.` : null);
+
+  if (!editing) {
+    return (
+      <div>
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <span className="text-xs font-medium text-ink-2">{STUDIES[study].name}</span>
+          <button
+            type="button"
+            className="text-xs font-medium text-accent underline underline-offset-2"
+            onClick={() => {
+              setSpec(formatQuestionNumbers(existing.map((q) => q.number)));
+              setEditing(true);
+            }}
+          >
+            Edit assignments
+          </button>
+        </div>
+        {existing.length ? (
+          <div className="flex max-w-xl flex-wrap gap-1" aria-label={`${STUDIES[study].name} assigned questions`}>
+            {existing.map((q) => (
+              <QuestionNumber key={q.number} number={q.number} status={q.status} />
+            ))}
+          </div>
+        ) : (
+          <span className="text-xs text-muted">No questions assigned</span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-line bg-subtle p-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor={`assign-${reviewer.userId}-${study}`} className="text-xs font-semibold text-ink-2">
+          {STUDIES[study].name} question numbers
+        </label>
+        <span className="text-xs text-muted">Available: 1–{count}</span>
+      </div>
+      <input
+        id={`assign-${reviewer.userId}-${study}`}
+        value={spec}
+        onChange={(event) => setSpec(event.target.value)}
+        placeholder="1-5, 8, 12"
+        autoComplete="off"
+        className={cx(inputCls, "font-mono", error && "border-[#d98d85]")}
+        aria-invalid={Boolean(error)}
+      />
+      <p className={cx("mt-1.5 text-xs", error ? "text-danger" : "text-muted")}>
+        {error ?? `${parsed.numbers.length} question${parsed.numbers.length === 1 ? "" : "s"} selected. Clear the field to remove all unstarted assignments.`}
+      </p>
+      {!error && parsed.numbers.length > 0 && (
+        <div className="mt-2 flex max-w-xl flex-wrap gap-1" aria-label="Assignment preview">
+          {parsed.numbers.map((number) => (
+            <QuestionNumber key={number} number={number} status={existingStatus.get(number) ?? "not_started"} />
+          ))}
+        </div>
+      )}
+      <div className="mt-3 flex gap-2">
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={Boolean(error)}
+          onClick={() =>
+            run(async () => {
+              const result = await post("/api/admin/assignments", { userId: reviewer.userId, study, questionNumbers: parsed.numbers });
+              setTimeout(() => window.location.reload(), 700);
+              return `Saved ${STUDIES[study]} assignments for ${reviewer.username}: ${result.assigned} assigned, ${result.added} added, ${result.removed} removed.`;
+            })
+          }
+        >
+          Save assignments
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function parseQuestionNumbers(spec: string, max: number): { numbers: number[]; error: string | null } {
+  const text = spec.trim();
+  if (!text) return { numbers: [], error: null };
+  const numbers = new Set<number>();
+  for (const token of text.split(/[\s,]+/).filter(Boolean)) {
+    const single = token.match(/^\d+$/);
+    const range = token.match(/^(\d+)-(\d+)$/);
+    if (!single && !range) return { numbers: [], error: `“${token}” is not a question number or range.` };
+    const start = Number(single?.[0] ?? range?.[1]);
+    const end = Number(single?.[0] ?? range?.[2]);
+    if (start < 1 || end < 1 || start > max || end > max) return { numbers: [], error: `Use question numbers from 1 to ${max}.` };
+    if (start > end) return { numbers: [], error: `Range ${token} runs backwards.` };
+    for (let number = start; number <= end; number++) numbers.add(number);
+  }
+  return { numbers: [...numbers].sort((a, b) => a - b), error: null };
+}
+
+function formatQuestionNumbers(numbers: number[]): string {
+  const sorted = [...new Set(numbers)].sort((a, b) => a - b);
+  const parts: string[] = [];
+  for (let i = 0; i < sorted.length; ) {
+    const start = sorted[i];
+    let end = start;
+    while (i + 1 < sorted.length && sorted[i + 1] === end + 1) end = sorted[++i];
+    parts.push(start === end ? String(start) : `${start}-${end}`);
+    i++;
+  }
+  return parts.join(", ");
+}
+
 function CreateReviewerForm({ run }: { run: Run }) {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -437,7 +542,7 @@ function CreateReviewerForm({ run }: { run: Run }) {
               {copied ? "Copied" : "Copy password"}
             </Button>
           </div>
-          <p className="mt-2 text-xs text-muted">Lost it? Use Reset password next to their name in the reviewers table. Reload to see them in the plan cards.</p>
+          <p className="mt-2 text-xs text-muted">Lost it? Use Reset password next to their name in the reviewers table. Reload to assign questions.</p>
         </div>
       )}
     </Card>

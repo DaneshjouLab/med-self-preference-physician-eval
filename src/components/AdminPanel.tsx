@@ -116,14 +116,18 @@ export function AdminPanel({
       )}
 
       <Card>
-        <div className="border-b border-line px-5 py-3">
-          <h2 className="font-semibold">Reviewers</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
+          <div>
+            <h2 className="font-semibold">Reviewers and assignments</h2>
+            <p className="mt-0.5 text-xs text-muted">Numbers match the frozen question order within each study.</p>
+          </div>
+          <QuestionLegend />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-subtle text-left text-xs uppercase tracking-wider text-muted">
               <tr>
-                {["Code", "Username", "Role", "Progress by study", "Last saved", ""].map((h) => (
+                {["Code", "Reviewer", "Role", "Assigned question numbers", "Progress", "Last saved", ""].map((h) => (
                   <th key={h} className="px-4 py-2 font-semibold">
                     {h}
                   </th>
@@ -144,20 +148,40 @@ export function AdminPanel({
                     )}
                   </td>
                   <td className="px-4 py-2.5">{r.role}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="min-w-72 px-4 py-2.5">
                     {r.studies.length === 0 ? (
                       <span className="text-muted">{r.role === "admin" ? "—" : "No questions assigned"}</span>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2.5">
                         {r.studies.map((st) => (
-                          <div key={st.study} className="flex flex-wrap items-center gap-2">
-                            <span className="w-24 text-xs font-medium text-ink-2">{STUDIES[st.study].name}</span>
-                            <div className="h-2 w-24 overflow-hidden rounded-full bg-line">
-                              <div className="h-full bg-done" style={{ width: st.assigned ? `${(st.complete / st.assigned) * 100}%` : 0 }} />
+                          <div key={st.study}>
+                            <div className="mb-1 text-xs font-medium text-ink-2">{STUDIES[st.study].name}</div>
+                            <div className="flex max-w-xl flex-wrap gap-1" aria-label={`${STUDIES[st.study].name} assigned questions`}>
+                              {st.questions.map((q) => (
+                                <QuestionNumber key={q.number} number={q.number} status={q.status} />
+                              ))}
                             </div>
-                            <span className="tabular-nums text-ink-2">
-                              {st.complete} of {st.assigned} done
-                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="min-w-52 px-4 py-2.5">
+                    {r.studies.length === 0 ? (
+                      <span className="text-muted">—</span>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {r.studies.map((st) => (
+                          <div key={st.study}>
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-20 overflow-hidden rounded-full bg-line">
+                                <div className="h-full bg-done" style={{ width: st.assigned ? `${(st.complete / st.assigned) * 100}%` : 0 }} />
+                              </div>
+                              <span className="tabular-nums text-ink-2">
+                                {st.complete} of {st.assigned} done
+                              </span>
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
                             {st.submittedAt ? (
                               <>
                                 <Pill tone="done">Submitted</Pill>
@@ -173,10 +197,9 @@ export function AdminPanel({
                             ) : st.complete === st.assigned ? (
                               <Pill tone="progress">Ready to submit</Pill>
                             ) : st.inProgress > 0 ? (
-                              <span className="text-xs text-progress">
-                                {st.inProgress} started ({st.inProgressNumbers.map((n) => `#${n}`).join(", ")})
-                              </span>
+                              <span className="text-xs text-progress">{st.inProgress} in progress</span>
                             ) : null}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -293,6 +316,48 @@ function Stat({ label, value }: { label: string; value: string | number }) {
       <div className="text-sm text-muted">{label}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
     </Card>
+  );
+}
+
+type QuestionStatus = SerializedStudy["questions"][number]["status"];
+
+const QUESTION_STYLES: Record<QuestionStatus, string> = {
+  not_started: "border-line bg-surface text-muted",
+  in_progress: "border-progress-line bg-progress-soft text-progress",
+  complete: "border-done-line bg-done-soft text-done",
+};
+
+const QUESTION_LABELS: Record<QuestionStatus, string> = {
+  not_started: "Not started",
+  in_progress: "In progress",
+  complete: "Complete",
+};
+
+function QuestionNumber({ number, status }: { number: number; status: QuestionStatus }) {
+  return (
+    <span
+      title={`Question ${number} · ${QUESTION_LABELS[status]}`}
+      aria-label={`Question ${number}, ${QUESTION_LABELS[status]}`}
+      className={cx(
+        "inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs font-semibold tabular-nums",
+        QUESTION_STYLES[status],
+      )}
+    >
+      {number}
+    </span>
+  );
+}
+
+function QuestionLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-xs text-muted" aria-label="Question status legend">
+      {(Object.keys(QUESTION_LABELS) as QuestionStatus[]).map((status) => (
+        <span key={status} className="inline-flex items-center gap-1.5">
+          <span className={cx("h-3 w-3 rounded-sm border", QUESTION_STYLES[status])} aria-hidden />
+          {QUESTION_LABELS[status]}
+        </span>
+      ))}
+    </div>
   );
 }
 

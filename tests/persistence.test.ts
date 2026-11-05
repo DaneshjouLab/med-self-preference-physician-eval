@@ -117,6 +117,11 @@ describe("saving and resuming", () => {
     expect(resumePosition(queue)).toBe(1);
     const progress = (await reviewerProgress(db)).find((r) => r.userId === r1.userId)!.studies.at(0)!;
     expect(progress).toMatchObject({ complete: 1, inProgress: 1, inProgressNumbers: [1] });
+    expect(progress.questions).toEqual([
+      { number: 1, status: "in_progress" },
+      { number: 2, status: "complete" },
+      { number: 3, status: "not_started" },
+    ]);
   });
 
   it("rejects invalid rankings and out-of-range scores", async () => {

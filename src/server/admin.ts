@@ -17,6 +17,8 @@ export interface StudyProgress {
   /** 1-based question numbers (as the physician sees them) that are started but not finished. */
   inProgressNumbers: number[];
   notStarted: number;
+  /** Frozen study question numbers and their current status for the admin assignment table. */
+  questions: { number: number; status: "not_started" | "in_progress" | "complete" }[];
   /** Set when every assignment in the study has been submitted. */
   submittedAt: Date | null;
   lastSavedAt: Date | null;
@@ -53,17 +55,28 @@ export async function reviewerProgress(db: DB): Promise<ReviewerProgress[]> {
     .groupBy(assignments.reviewerId, assignments.study);
   // Question numbers match the physician's own numbering: position in their live queue.
   const queues = await db
-    .select({ reviewerId: assignments.reviewerId, study: assignments.study, status: assignments.status })
+    .select({
+      reviewerId: assignments.reviewerId,
+      study: assignments.study,
+      status: assignments.status,
+      questionNumber: sql<number>`${items.sampleIndex} + 1`,
+    })
     .from(assignments)
+    .innerJoin(items, eq(items.itemId, assignments.itemId))
     .where(isNull(assignments.transferredAt))
     .orderBy(asc(assignments.reviewerId), asc(assignments.study), asc(assignments.queuePosition));
   const startedNumbers = new Map<string, number[]>();
+  const questionStatuses = new Map<string, StudyProgress["questions"]>();
   const seen = new Map<string, number>();
   for (const a of queues) {
     const key = `${a.reviewerId}\u0000${a.study}`;
     const n = (seen.get(key) ?? 0) + 1;
     seen.set(key, n);
     if (a.status === "in_progress") startedNumbers.set(key, [...(startedNumbers.get(key) ?? []), n]);
+    questionStatuses.set(key, [
+      ...(questionStatuses.get(key) ?? []),
+      { number: a.questionNumber, status: a.status },
+    ]);
   }
   return people.map((u) => ({
     userId: u.userId,
@@ -84,6 +97,7 @@ export async function reviewerProgress(db: DB): Promise<ReviewerProgress[]> {
         inProgress,
         inProgressNumbers: startedNumbers.get(`${u.userId}\u0000${study}`) ?? [],
         notStarted,
+        questions: (questionStatuses.get(`${u.userId}\u0000${study}`) ?? []).sort((a, b) => a.number - b.number),
         submittedAt: unsubmitted === 0 && submittedAt ? new Date(submittedAt) : null,
         lastSavedAt: lastSavedAt ? new Date(lastSavedAt) : null,
       })),

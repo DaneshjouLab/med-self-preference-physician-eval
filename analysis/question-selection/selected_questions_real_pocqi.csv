@@ -1,0 +1,101 @@
+study,question_id,stratum,sampling_weight,group,lift_judge,qarb,peak,peak_judge,kendall_w
+real_pocqi,da5ff145-041a-4da3-918c-8a9505baa972,L,8.25,Endocrinology,,0.286,1.714,gpt-5.6-sol,0.815
+real_pocqi,8c212dac-ed94-4fe8-bdf4-e298ac04ac98,L,8.25,Rheumatology,,1.143,3.143,gpt-5.6-sol,0.481
+real_pocqi,043debea-aa6c-4226-a499-d7c77aff3c76,L,8.25,Infectious Disease,,0.857,2.429,gpt-5.6-sol,0.751
+real_pocqi,63ecb0ab-f121-4389-b801-ec4df485ec8d,H:gpt-5.6-sol,2.2,Surgery,gpt-5.6-sol,2.0,6.143,gpt-5.6-sol,0.367
+real_pocqi,754c9ce3-2b47-49af-9943-3fbc6e951b45,H:gemini-3.7-flash,1.4,OB / GYN,gemini-3.7-flash,0.857,4.571,gemini-3.7-flash,0.512
+real_pocqi,554f45be-6363-4f10-84cd-25b7deb2a9c3,H:Qwen3.8-27B-FP8,6.4,Oncology / Hematology,Qwen/Qwen3.8-27B-FP8,1.286,4,Qwen/Qwen3.8-27B-FP8,0.79
+real_pocqi,f67fa948-b268-4c59-b3f3-e47a5230962c,L,8.25,Infectious Disease,,1.143,1.857,gemini-3.7-flash,0.868
+real_pocqi,36009db6-fa13-4300-8ec3-cfb1c3be5ecd,H:claude-opus-5,3.2,OB / GYN,claude-opus-5,1.429,4.143,gpt-5.6-sol,0.585
+real_pocqi,e647f14f-5879-48b4-8049-2c62400273c5,H:claude-sonnet-5,1.6,OB / GYN,claude-sonnet-5,1.571,4.571,claude-sonnet-5,0.672
+real_pocqi,3b860f49-a5ee-4aea-be7f-35886cfc9a08,L,8.25,Surgical Oncology,,1.429,3.143,gpt-5.6-sol,0.613
+real_pocqi,21f17cb4-5fe0-40bb-8b01-07cfac459451,L,8.25,Psychiatry,,1.429,3.286,gemini-3.1-pro-preview,0.699
+real_pocqi,6b57eee9-7107-4f46-b9c1-6dc7964cfadf,H:gpt-5.6-sol,2.2,Gastroenterology,gpt-5.6-sol,1.714,6,gpt-5.6-sol,0.413
+real_pocqi,26ca7797-6472-486d-8fa6-42740cdf63b6,H:gpt-5.6-terra,2.0,OB / GYN,gpt-5.6-terra,2.0,6,gpt-5.6-terra,0.274
+real_pocqi,890aa5dc-8c0b-49d0-8b71-235b7952c466,H:claude-sonnet-5,1.6,Rheumatology,claude-sonnet-5,1.143,4.429,claude-sonnet-5,0.651
+real_pocqi,b20018cf-b025-4733-8fbe-dbbafe07adb0,H:gemini-3.1-pro-preview,2.2,OB / GYN,gemini-3.1-pro-preview,1.714,4.429,gemini-3.1-pro-preview,0.568
+real_pocqi,0b6e709d-f977-425b-9b49-bee78e6a7023,L,8.25,Pediatrics,,0.714,2.857,gpt-5.6-terra,0.641
+real_pocqi,01c8fd1c-cb80-4e27-b5ed-05cc09226f8f,L,8.25,Cardiology,,0.714,2.714,gpt-5.6-sol,0.574
+real_pocqi,a6d4c399-633a-44b4-9355-17994ca0caaa,L,8.25,Oncology / Hematology,,0.286,1.857,gpt-5.6-terra,0.877
+real_pocqi,4b36e7c7-c757-485a-a0d1-79b85071920b,L,8.25,OB / GYN,,1.429,3.571,gpt-5.6-sol,0.64
+real_pocqi,373cfbca-6095-4c6b-a3ea-189f3a957e8b,L,8.25,Radiology,,0.857,2.429,gpt-5.6-sol,0.722
+real_pocqi,306d72e5-bdf4-4ae8-bc58-444e2bb3cfad,L,8.25,Cardiology,,1.0,2.571,gpt-5.6-sol,0.796
+real_pocqi,3c58fad9-ec14-4a15-85f2-f2026e26e5e8,H:claude-sonnet-5,1.6,Oncology / Hematology,claude-sonnet-5,1.429,5.143,claude-sonnet-5,0.576
+real_pocqi,15f2c20e-ec35-4a09-8050-4e9ac1fdd356,L,8.25,Pulmonology,,0.857,2.571,gemini-3.7-flash,0.751
+real_pocqi,fe241d3e-fc54-4d43-9e24-0e5f9e97a6eb,L,8.25,Rheumatology,,1.0,4.429,gpt-5.6-terra,0.207
+real_pocqi,35ae1aed-307e-4e03-b2f4-40283578f5d4,L,8.25,Cardiology,,0.714,2,gemini-3.7-flash,0.767
+real_pocqi,7f981ff4-d6bd-45c0-bf11-770d8a85f006,H:gemini-3.7-flash,1.4,Internal Medicine,gemini-3.7-flash,0.714,3.429,gemini-3.7-flash,0.774
+real_pocqi,6f304d62-1797-4054-99d6-46b1cc4947a5,L,8.25,Surgery,,1.0,3.286,Qwen/Qwen3.5-122B-A10B-FP8,0.552
+real_pocqi,ded2b7fd-aaff-4d23-a578-fba6bf8b5305,H:claude-sonnet-5,1.6,Infectious Disease,claude-sonnet-5,1.571,4,claude-sonnet-5,0.629
+real_pocqi,3b3be142-f12d-452c-afb9-b2118cdbccaf,L,8.25,Hospital-Based Medicine,,1.143,3.143,gpt-5.6-sol,0.783
+real_pocqi,2e21db54-92f4-4d1b-b5a3-c544e22cdc73,L,8.25,Psychiatry,,1.286,4,gpt-5.6-terra,0.597
+real_pocqi,eace0327-1f75-4545-8327-bd03da1e55a8,H:Qwen3.8-27B-FP8,6.4,Nephrology,Qwen/Qwen3.8-27B-FP8,2.857,5.286,Qwen/Qwen3.8-27B-FP8,0.386
+real_pocqi,2ae8424c-64c1-4cdf-b479-68b492a740c6,L,8.25,Nephrology,,0.857,2.286,gemini-3.7-flash,0.588
+real_pocqi,1870255a-91a5-44a3-8d65-bf59fb055e6d,H:gemini-3.1-pro-preview,2.2,Ophthalmology,gemini-3.1-pro-preview,1.0,3.714,gemini-3.1-pro-preview,0.686
+real_pocqi,2592b8cc-a797-4735-b16c-cc521fa84d43,L,8.25,Urology,,0.429,2.857,gpt-5.6-sol,0.716
+real_pocqi,d8bd2d97-ba1c-4fe5-b9d0-bcece95ba997,H:gpt-5.6-terra,2.0,OB / GYN,gpt-5.6-terra,1.429,5.143,gpt-5.6-terra,0.459
+real_pocqi,2c186997-3d52-4ba2-92ed-850f273fddbf,L,8.25,Endocrinology,,1.429,4.714,gpt-5.6-sol,0.468
+real_pocqi,0b6252d5-50d7-4cca-b962-4546fe1b056b,L,8.25,Pulmonology,,1.429,3.714,gpt-5.6-sol,0.633
+real_pocqi,3927732a-fdc3-4536-bad6-5259e964c7f4,L,8.25,Dermatology,,0.857,2.429,gemini-3.7-flash,0.868
+real_pocqi,507bcc73-b69c-40b7-bc27-8c99fa59dd0b,L,8.25,Nephrology,,0.714,2.571,gemini-3.7-flash,0.616
+real_pocqi,eacf7ea4-83a5-465b-9a7b-09ff88af37c1,L,8.25,Rheumatology,,1.714,5.429,gpt-5.6-sol,0.653
+real_pocqi,00368a91-5f7f-4361-84bc-15701d6053bb,L,8.25,Oncology / Hematology,,0.286,1.714,gpt-5.6-terra,0.872
+real_pocqi,0fe58bf9-136e-4789-b347-c020434f3e11,L,8.25,Surgery,,0.143,1.571,gpt-5.6-sol,0.803
+real_pocqi,0ac30fd8-812e-47d4-a935-a56e76628da2,H:claude-opus-5,3.2,Dermatology,claude-opus-5,1.429,3.429,gpt-5.6-terra,0.371
+real_pocqi,cbfca184-7e33-465b-af3c-9e70067e4ae1,L,8.25,OB / GYN,,1.857,3.714,gpt-5.6-sol,0.361
+real_pocqi,574f71b0-4240-41ab-98c2-c3e7216e8768,H:Qwen3.8-27B-FP8,6.4,Endocrinology,Qwen/Qwen3.8-27B-FP8,2.429,5,Qwen/Qwen3.5-122B-A10B-FP8,0.402
+real_pocqi,2cef781c-7e47-4355-ba0e-c22ccea92066,L,8.25,Endocrinology,,1.286,3,gpt-5.6-terra,0.607
+real_pocqi,35fc4011-9923-41a2-9772-a8587979a3e5,L,8.25,Internal Medicine,,1.286,4.429,gpt-5.6-terra,0.548
+real_pocqi,24905de6-a1ab-458c-a358-4509c300b2fe,H:gemini-3.1-pro-preview,2.2,Emergency Medicine,gemini-3.1-pro-preview,1.571,4.571,gpt-5.6-sol,0.471
+real_pocqi,aa32eace-d2ba-441c-ac35-be7fb7d44fef,L,8.25,Dermatology,,1.429,3.857,gpt-5.6-sol,0.597
+real_pocqi,4ab96e9f-3c17-4712-86b7-59ad06a81f8d,H:claude-opus-5,3.2,Pediatrics,claude-opus-5,1.143,3.714,gpt-5.6-sol,0.691
+real_pocqi,07fb1c12-c0e9-45eb-afb6-52ce63c0dafc,L,8.25,Cardiology,,0.143,0.857,claude-opus-5,0.863
+real_pocqi,9451fe32-1d0b-400e-add1-02688436e0b0,L,8.25,Emergency Medicine,,0.714,2.571,claude-sonnet-5,0.68
+real_pocqi,10875205-ddb7-4494-8de8-a908bdc3c4b1,H:gemini-3.1-pro-preview,2.2,Endocrinology,gemini-3.1-pro-preview,1.571,4.571,gemini-3.1-pro-preview,0.716
+real_pocqi,752adb8e-29d8-443c-b586-706cee691d2b,H:gpt-5.6-terra,2.0,Dermatology,gpt-5.6-terra,1.571,6.143,gpt-5.6-terra,0.629
+real_pocqi,24ef4f2f-27b6-4850-b8d8-f8caa89573bc,H:gemini-3.7-flash,1.4,Primary Care,gemini-3.7-flash,2.429,4.429,gpt-5.6-sol,0.379
+real_pocqi,fa6e0270-d1d4-47e6-b12c-b84871c599da,L,8.25,OB / GYN,,0.857,2.286,gpt-5.6-sol,0.777
+real_pocqi,b07be698-84f6-467e-9b59-9b87f40e617a,H:gpt-5.6-sol,2.2,Rheumatology,gpt-5.6-sol,1.714,5.857,gpt-5.6-sol,0.446
+real_pocqi,00bf2180-f8e4-49b3-974b-7af8a4a3b34b,L,8.25,Infectious Disease,,1.857,3.857,gpt-5.6-sol,0.391
+real_pocqi,809c170a-841d-42cd-a2d6-c34d2809d9b8,L,8.25,OB / GYN,,1.143,2.857,gpt-5.6-sol,0.649
+real_pocqi,ac17f31c-fdb8-41eb-9b3c-09a30e4304c1,L,8.25,Transplantation,,0.143,2,gpt-5.6-sol,0.879
+real_pocqi,d8db9dc5-effd-4776-9a8c-1a6a5c490ab5,L,8.25,Transplantation,,0.857,4,gpt-5.6-sol,0.653
+real_pocqi,8d63933b-cba8-44f9-9022-0b12d9c52f83,L,8.25,Oncology / Hematology,,1.143,3.571,Qwen/Qwen3.5-122B-A10B-FP8,0.539
+real_pocqi,eade6fe8-cff6-4435-9603-167196aa9bec,L,8.25,Oncology / Hematology,,0.286,3.286,gpt-5.6-sol,0.737
+real_pocqi,2ab3ac78-b138-4a59-989d-c052a0092e17,H:gpt-5.6-sol,2.2,Dermatology,gpt-5.6-sol,1.429,5.857,gpt-5.6-sol,0.531
+real_pocqi,848dc87a-3d31-4025-8d5c-53c4c43cb408,H:gpt-5.6-terra,2.0,Family Medicine,gpt-5.6-terra,1.571,5,gpt-5.6-sol,0.275
+real_pocqi,818e368b-9595-42e9-bf1c-6a41a74d3f47,L,8.25,Neurology,,1.857,4.571,gpt-5.6-sol,0.631
+real_pocqi,8d67bd05-a9b1-40fd-bc38-66e1d54a11bb,L,8.25,Endocrinology,,1.286,3.429,gpt-5.6-sol,0.635
+real_pocqi,ffd0328e-8f67-4ea7-9c97-2ec6aeef20c6,H:Qwen3.5-122B-A10B-FP8,6.0,Endocrinology,Qwen/Qwen3.5-122B-A10B-FP8,1.714,5.143,Qwen/Qwen3.5-122B-A10B-FP8,0.592
+real_pocqi,4e4ce838-7db9-435a-8568-0de54405e7e7,L,8.25,Allergy & Immunology,,2.143,4.571,gpt-5.6-sol,0.344
+real_pocqi,69b59bfd-6f2c-4f6d-8228-0a8693a2df98,L,8.25,Rheumatology,,1.286,3.143,gemini-3.7-flash,0.732
+real_pocqi,a8af8cf1-9aa3-4d34-b394-81c56de4f34f,H:Qwen3.8-27B-FP8,6.4,Dermatology,Qwen/Qwen3.8-27B-FP8,1.571,4,gpt-5.6-sol,0.369
+real_pocqi,16c0fc15-6734-4d0c-962a-05dd4391207c,L,8.25,Pediatrics,,1.143,3,gpt-5.6-sol,0.725
+real_pocqi,ec702d33-32f9-48d3-ad0d-9e9d25c4fa50,H:gpt-5.6-terra,2.0,Psychiatry,gpt-5.6-terra,2.286,5.429,gpt-5.6-sol,0.414
+real_pocqi,a468a438-cc9b-4e6d-8754-69e21ad3e165,H:Qwen3.5-122B-A10B-FP8,6.0,Surgery,Qwen/Qwen3.5-122B-A10B-FP8,2.143,5.286,Qwen/Qwen3.5-122B-A10B-FP8,0.608
+real_pocqi,b42a274a-6131-4ade-aecb-63307cb24ad7,L,8.25,Neurology,,1.143,2.571,gemini-3.7-flash,0.594
+real_pocqi,fd28b3e2-d5d5-49fd-9e75-74cdc36a93d4,L,8.25,Critical Care,,1.286,2.571,claude-sonnet-5,0.808
+real_pocqi,278ace31-4af0-410c-8fbd-03606b868d4d,L,8.25,Orthopedics,,1.0,4.143,gpt-5.6-sol,0.469
+real_pocqi,ed62079f-c3ea-4fd3-8715-c7b47a9bf695,L,8.25,Dermatology,,-0.143,1,claude-opus-5,0.906
+real_pocqi,cc1e6064-5e27-4b08-a409-ae9600f7c815,L,8.25,Oncology / Hematology,,1.143,3.286,gpt-5.6-sol,0.435
+real_pocqi,f6b9965e-a534-47d6-91d5-f4bf6f6b4e87,H:gemini-3.1-pro-preview,2.2,Dermatology,gemini-3.1-pro-preview,1.286,3.857,gemini-3.1-pro-preview,0.688
+real_pocqi,6eab7e09-681b-4302-b730-a5abd248027f,L,8.25,Endocrinology,,2.143,5.429,gpt-5.6-sol,0.389
+real_pocqi,86adf51b-ab0b-48e3-8e81-326d2329865a,L,8.25,Allergy & Immunology,,1.0,1.429,gemini-3.1-pro-preview,0.799
+real_pocqi,a1b4263c-ce32-4dd9-b527-546fae55dad5,H:Qwen3.5-122B-A10B-FP8,6.0,Infectious Disease,Qwen/Qwen3.5-122B-A10B-FP8,1.857,5.143,Qwen/Qwen3.5-122B-A10B-FP8,0.692
+real_pocqi,c5e12e23-3b27-4150-a97b-ac43840d293f,L,8.25,Neurology,,0.429,1,gpt-5.6-sol,0.876
+real_pocqi,0d4c2cdd-bbe3-46bf-bf8e-b13925729f31,H:Qwen3.8-27B-FP8,6.4,Primary Care,Qwen/Qwen3.8-27B-FP8,3.0,5.286,Qwen/Qwen3.8-27B-FP8,0.305
+real_pocqi,81ca5a96-75b1-48fd-9c24-64c1edd9f0d9,L,8.25,Dermatology,,0.286,2.857,gpt-5.6-sol,0.545
+real_pocqi,2295a4f7-9c92-4b69-93c7-a4121bf43058,H:claude-sonnet-5,1.6,Oncology / Hematology,claude-sonnet-5,1.286,4.429,claude-sonnet-5,0.723
+real_pocqi,a3f44080-04fb-46f4-84a0-979b968cab87,L,8.25,Anesthesiology,,1.857,3.429,gpt-5.6-sol,0.419
+real_pocqi,35cd9232-23ea-4588-847f-7e452fb1e15b,L,8.25,Primary Care,,1.571,3.714,gpt-5.6-sol,0.72
+real_pocqi,96d3c58d-c095-4a6b-bdfd-8427e6441bbc,L,8.25,Cardiology,,1.0,3.286,gpt-5.6-sol,0.637
+real_pocqi,06d054d2-7e81-4807-b4fd-1aa2df62493e,H:claude-opus-5,3.2,Oncology / Hematology,claude-opus-5,1.286,4.571,gpt-5.6-terra,0.275
+real_pocqi,e0336af8-a78f-4f73-99d0-f75943004d81,L,8.25,Critical Care,,1.714,3.286,gpt-5.6-terra,0.5
+real_pocqi,f78cdaf8-c783-4b78-b0f6-15a9fe9855af,H:Qwen3.5-122B-A10B-FP8,6.0,OB / GYN,Qwen/Qwen3.5-122B-A10B-FP8,2.143,6.571,Qwen/Qwen3.5-122B-A10B-FP8,0.558
+real_pocqi,18972b64-8043-4ba5-ba67-803482bf81dd,L,8.25,Family Medicine,,1.143,3.429,gpt-5.6-sol,0.688
+real_pocqi,00f81646-aa86-459e-a2c7-3d9a0b6d9b5a,L,8.25,Gastroenterology,,0.714,3,gpt-5.6-terra,0.694
+real_pocqi,da4aa6c3-a1ea-4f7a-bb24-826a7f469464,H:gemini-3.7-flash,1.4,Psychiatry,gemini-3.7-flash,2.143,5.429,gpt-5.6-sol,0.313
+real_pocqi,157088cd-e6ed-4cf5-be8f-4bcf1c0e1af9,H:Qwen3.5-122B-A10B-FP8,6.0,Infectious Disease,Qwen/Qwen3.5-122B-A10B-FP8,1.714,4.714,Qwen/Qwen3.5-122B-A10B-FP8,0.7
+real_pocqi,152a9b42-4b84-444e-9cd3-9807ea88b2bc,H:claude-opus-5,3.2,Rheumatology,claude-opus-5,2.143,3.857,gpt-5.6-sol,0.612
+real_pocqi,57028f92-15f2-4834-8d45-fbb732b2c7d3,H:gpt-5.6-sol,2.2,Internal Medicine,gpt-5.6-sol,1.857,6.143,gpt-5.6-sol,0.387
+real_pocqi,1e45e014-c0cf-4c93-ba3e-0d61da24d015,H:gemini-3.7-flash,1.4,Critical Care,gemini-3.7-flash,1.429,4.714,gemini-3.7-flash,0.265

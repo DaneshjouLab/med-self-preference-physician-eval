@@ -1,0 +1,12 @@
+
+=== Real-POCQi
+  share 0.0 | random | estimate -0.01 +/-0.09 | own answers lifted >=2 places, per judge: min 4, median 18, max 75
+  share 0.0 | final  | estimate -0.01 +/-0.10 | own answers lifted >=2 places, per judge: min 8, median 20, max 76
+  share 0.5 | random | estimate +0.54 +/-0.08 | own answers lifted >=2 places, per judge: min 4, median 18, max 75
+  share 0.5 | final  | estimate +0.54 +/-0.09 | own answers lifted >=2 places, per judge: min 8, median 20, max 76
+
+=== MedSP1000
+  share 0.0 | random | estimate +0.00 +/-0.12 | own answers lifted >=2 places, per judge: min 4, median 16, max 26
+  share 0.0 | final  | estimate +0.00 +/-0.12 | own answers lifted >=2 places, per judge: min 7, median 19, max 28
+  share 0.5 | random | estimate +0.55 +/-0.11 | own answers lifted >=2 places, per judge: min 4, median 16, max 26
+  share 0.5 | final  | estimate +0.56 +/-0.12 | own answers lifted >=2 places, per judge: min 7, median 19, max 28
